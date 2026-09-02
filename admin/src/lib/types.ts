@@ -1,0 +1,31 @@
+export type Status = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface RequestData {
+  id: string
+  dinas: string
+  nama: string
+  nip: string
+  jabatan: string
+  layanan: string
+  tanggal: string
+  deskripsi?: string | null
+  pdfFile: string
+  status: Status
+  statusToken: string
+  adminEmail?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LayananData {
+  id: string
+  nama: string
+  urutan: number
+  createdAt: string
+}
+
+export const STATUS_LABEL: Record<Status, string> = {
+  PENDING: 'Menunggu',
+  APPROVED: 'Disetujui',
+  REJECTED: 'Ditolak',
+}

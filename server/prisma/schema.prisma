@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_UNPOOLED")
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Layanan {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  urutan    Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Request {
+  id          String   @id @default(cuid())
+  dinas       String
+  nama        String
+  nip         String
+  jabatan     String
+  layanan     String
+  tanggal     DateTime
+  deskripsi   String?
+  pdfFile     String
+  status      Status   @default(PENDING)
+  statusToken String   @unique
+  adminEmail  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Admin {
+  id    String @id @default(cuid())
+  email String @unique
+}
