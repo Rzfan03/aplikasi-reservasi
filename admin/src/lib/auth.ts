@@ -5,16 +5,39 @@ export const { adapter: authClient } = createInternalNeonAuth(
   { fetchOptions: { credentials: 'include' } },
 )
 
-type TokenResult = { data?: { token?: string } | null; error?: { message?: string } | null }
-export type { TokenResult }
-
-export async function getJWTToken(): Promise<string | null> {
-  const result = (await authClient.token()) as unknown as TokenResult
-  return result.data?.token ?? null
-}
-
 export type SessionUser = {
   id: string
   email: string
   name?: string
+}
+
+type SessionResult = {
+  data?: {
+    session?: Record<string, unknown>
+    user?: { id: string; email: string; name?: string }
+  }
+}
+
+export async function getSessionAccessToken(): Promise<string | null> {
+  try {
+    const result = (await authClient.getSession()) as unknown as SessionResult
+    const session = result?.data?.session
+    if (!session) {
+      console.warn('[auth] no session in result')
+      return null
+    }
+    const token =
+      (session.access_token as string) ??
+      (session.accessToken as string) ??
+      (session.token as string) ??
+      null
+    if (!token) {
+      console.warn('[auth] session exists but no token found. Keys:', Object.keys(session))
+      return null
+    }
+    return token
+  } catch (err) {
+    console.error('[auth] getSessionAccessToken error:', err)
+    return null
+  }
 }

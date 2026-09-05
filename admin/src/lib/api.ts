@@ -1,22 +1,37 @@
-import { getJWTToken } from './auth'
-import type { LayananData, RequestData, Status } from './types'
+import { getSessionAccessToken } from './auth'
+import type { InstansiData, LayananData, RequestData, StatsData, Status } from './types'
 
 const API = import.meta.env.VITE_API_URL
 
 export class UnauthorizedError extends Error {}
 
-export async function getToken(): Promise<string | null> {
-  return (await getJWTToken()) ?? null
-}
-
 export function sseUrl(): string {
   return `${API}/api/requests/events`
+}
+
+export async function getToken(): Promise<string | null> {
+  return getSessionAccessToken()
+}
+
+let _redirectCooldown = false
+
+function redirectToLogin() {
+  if (_redirectCooldown) return
+  _redirectCooldown = true
+  setTimeout(() => { _redirectCooldown = false }, 2000)
+  console.error('[api] redirectToLogin triggered', new Error().stack)
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login'
+  }
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const doFetch = async () => {
     const token = await getToken()
-    if (!token) throw new UnauthorizedError('Tidak ada sesi')
+    if (!token) {
+      console.error(`[api] no token for ${path}`)
+      throw new UnauthorizedError('Tidak ada sesi')
+    }
     return fetch(`${API}${path}`, {
       ...init,
       headers: {
@@ -27,7 +42,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     })
   }
 
-  let res
+  let res: Response
   try {
     res = await doFetch()
   } catch (e) {
@@ -35,8 +50,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw e
   }
   if (res.status === 401) {
-    // JWT short-lived (15 mnt); token bisa kedaluwarsa di tab yang lama.
-    // Ambil token segar sekali lalu ulangi permintaan.
+    console.warn(`[api] 401 on ${path}, retrying once...`)
     try {
       res = await doFetch()
     } catch (e) {
@@ -45,6 +59,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
   }
   if (res.status === 401) {
+    console.error(`[api] 401 on ${path} after retry`)
     redirectToLogin()
     throw new UnauthorizedError(res.statusText)
   }
@@ -56,10 +71,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-function redirectToLogin() {
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login'
-  }
+export async function fetchStats(): Promise<StatsData> {
+  return request<StatsData>('/api/requests/stats')
+}
+
+export async function fetchRequestsPaged(opts?: {
+  status?: Status
+  dateFrom?: string
+  dateTo?: string
+  search?: string
+  page?: number
+  limit?: number
+}): Promise<{ data: RequestData[]; total: number; page: number; limit: number }> {
+  const params = new URLSearchParams()
+  if (opts?.status) params.set('status', opts.status)
+  if (opts?.dateFrom) params.set('dateFrom', opts.dateFrom)
+  if (opts?.dateTo) params.set('dateTo', opts.dateTo)
+  if (opts?.search) params.set('search', opts.search)
+  if (opts?.page) params.set('page', String(opts.page))
+  if (opts?.limit) params.set('limit', String(opts.limit))
+  const qs = params.toString()
+  return request(`/api/requests${qs ? `?${qs}` : ''}`)
 }
 
 export async function fetchRequests(status?: Status): Promise<RequestData[]> {
@@ -97,4 +129,26 @@ export async function updateLayanan(
 
 export async function deleteLayanan(id: string): Promise<void> {
   await request<void>(`/api/layanan/${id}`, { method: 'DELETE' })
+}
+
+export async function fetchInstansi(): Promise<InstansiData[]> {
+  return request<InstansiData[]>('/api/instansi')
+}
+
+export async function createInstansi(nama: string): Promise<InstansiData> {
+  return request<InstansiData>('/api/instansi', {
+    method: 'POST',
+    body: JSON.stringify({ nama }),
+  })
+}
+
+export async function updateInstansi(id: string, data: { nama?: string }): Promise<InstansiData> {
+  return request<InstansiData>(`/api/instansi/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteInstansi(id: string): Promise<void> {
+  await request<void>(`/api/instansi/${id}`, { method: 'DELETE' })
 }

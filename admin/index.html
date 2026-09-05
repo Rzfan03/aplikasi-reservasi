@@ -8,9 +8,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('app-settings');
+          if (!raw) return;
+          var s = JSON.parse(raw);
+          var fonts = { poppins: "'Poppins', sans-serif", inter: "'Inter', sans-serif" };
+          var r = document.documentElement.style;
+          if (s.font && fonts[s.font]) r.setProperty('--font-sans', fonts[s.font]);
+          if (s.fontSize) r.setProperty('--font-size-base', s.fontSize);
+          var theme = s.theme || 'dark';
+          if (theme === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.classList.remove('dark', 'light');
+          document.documentElement.classList.add(theme);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

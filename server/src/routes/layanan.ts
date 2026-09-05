@@ -4,56 +4,54 @@ import { requireAdmin } from '../middleware/requireAdmin.js'
 
 export const layananRouter = Router()
 
-// Public: list active services, ordered — consumed by the user form
-layananRouter.get('/', async (_req, res) => {
-  const layanan = await prisma.layanan.findMany({
-    orderBy: { urutan: 'asc' },
-  })
-  res.json(layanan)
+layananRouter.get('/', requireAdmin, async (_req, res) => {
+  const items = await prisma.layanan.findMany({ orderBy: { urutan: 'asc' } })
+  res.json(items)
 })
 
-// Admin: create
 layananRouter.post('/', requireAdmin, async (req, res) => {
   const { nama, urutan } = req.body
-  if (!nama || typeof nama !== 'string' || !nama.trim()) {
-    res.status(400).json({ error: 'Nama layanan wajib diisi' })
-    return
-  }
-  try {
-    const layanan = await prisma.layanan.create({
-      data: { nama: nama.trim(), urutan: urutan ?? 0 },
-    })
-    res.status(201).json(layanan)
-  } catch (e) {
-    res.status(409).json({ error: 'Layanan dengan nama tersebut sudah ada' })
-  }
+  if (!nama) { res.status(400).json({ error: 'nama is required' }); return }
+  const item = await prisma.layanan.create({ data: { nama, urutan: urutan ?? 0 } })
+  res.status(201).json(item)
 })
 
-// Admin: rename / reorder
 layananRouter.put('/:id', requireAdmin, async (req, res) => {
   const { nama, urutan } = req.body
-  const data: { nama?: string; urutan?: number } = {}
-  if (nama !== undefined) {
-    if (!nama.trim()) {
-      res.status(400).json({ error: 'Nama layanan tidak boleh kosong' })
-      return
-    }
-    data.nama = nama.trim()
-  }
-  if (urutan !== undefined) data.urutan = Number(urutan)
-  try {
-    const layanan = await prisma.layanan.update({
-      where: { id: req.params.id },
-      data,
-    })
-    res.json(layanan)
-  } catch (e) {
-    res.status(409).json({ error: 'Layanan dengan nama tersebut sudah ada' })
-  }
+  const item = await prisma.layanan.update({
+    where: { id: req.params.id },
+    data: { ...(nama !== undefined && { nama }), ...(urutan !== undefined && { urutan }) },
+  })
+  res.json(item)
 })
 
-// Admin: delete
 layananRouter.delete('/:id', requireAdmin, async (req, res) => {
   await prisma.layanan.delete({ where: { id: req.params.id } })
+  res.status(204).end()
+})
+
+// Instansi CRUD
+export const instansiRouter = Router()
+
+instansiRouter.get('/', requireAdmin, async (_req, res) => {
+  const items = await prisma.instansi.findMany({ orderBy: { createdAt: 'desc' } })
+  res.json(items)
+})
+
+instansiRouter.post('/', requireAdmin, async (req, res) => {
+  const { nama } = req.body
+  if (!nama) { res.status(400).json({ error: 'nama is required' }); return }
+  const item = await prisma.instansi.create({ data: { nama } })
+  res.status(201).json(item)
+})
+
+instansiRouter.put('/:id', requireAdmin, async (req, res) => {
+  const { nama } = req.body
+  const item = await prisma.instansi.update({ where: { id: req.params.id }, data: { nama } })
+  res.json(item)
+})
+
+instansiRouter.delete('/:id', requireAdmin, async (req, res) => {
+  await prisma.instansi.delete({ where: { id: req.params.id } })
   res.status(204).end()
 })

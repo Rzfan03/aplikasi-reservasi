@@ -1,0 +1,150 @@
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { FileText, Search, ClipboardList } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import StatusBadge from '@/components/StatusBadge'
+import { fetchRequestsPaged } from '@/lib/api'
+import { type RequestData, type Status } from '@/lib/types'
+import { Skeleton } from '@/components/ui/skeleton'
+
+type Filter = Status | 'ALL'
+
+function formatTanggal(value: string) {
+  return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+export default function PermohonanPage() {
+  const [data, setData] = useState<RequestData[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [filter, setFilter] = useState<Filter>('ALL')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const LIMIT = 10
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetchRequestsPaged({
+        status: filter === 'ALL' ? undefined : (filter as Status),
+        search: search || undefined,
+        page,
+        limit: LIMIT,
+      })
+      setData(res.data)
+      setTotal(res.total)
+    } catch {} finally {
+      setLoading(false)
+    }
+  }, [filter, page, search])
+
+  useEffect(() => { load() }, [load])
+
+  const totalPages = Math.ceil(total / LIMIT)
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Permohonan</h1>
+        <p className="text-sm text-muted-foreground">Daftar permohonan masuk</p>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari nama, instansi…"
+            className="pl-9"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          />
+        </div>
+        <Select value={filter} onValueChange={(v) => { setFilter(v as Filter); setPage(1) }}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Semua</SelectItem>
+            <SelectItem value="PENDING">Menunggu</SelectItem>
+            <SelectItem value="APPROVED">Disetujui</SelectItem>
+            <SelectItem value="REJECTED">Ditolak</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="divide-y divide-border">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4">
+                  <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : data.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <ClipboardList className="mb-3 size-8" />
+              <p>Tidak ada data</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {data.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-muted transition-colors cursor-pointer"
+                  onClick={() => navigate(`/permohonan/${r.id}`)}
+                >
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <FileText className="size-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate text-foreground">{r.nama}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {r.instansi} · {r.layanan} · {formatTanggal(r.tanggal)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={r.status} />
+                    <Button size="sm" variant="ghost" className="shrink-0" onClick={(e) => { e.stopPropagation(); navigate(`/permohonan/${r.id}`) }}>
+                      <FileText className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+          <span>Halaman {page} / {totalPages} ({total} data)</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              Sebelumnya
+            </Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              Berikutnya
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,113 +1,84 @@
 import { useState } from 'react'
-import {
-  AlertCircle,
-  CalendarCheck,
-  ClipboardList,
-  FileCheck2,
-  LayoutDashboard,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useNavigate } from 'react-router-dom'
+import { useSessionCtx } from '@/lib/SessionProvider'
 
-interface Props {
-  onSignIn: (email: string, password: string) => Promise<void>
-}
-
-const pillars = [
-  { icon: ClipboardList, title: 'Satu pintu', desc: 'Semua pengajuan layanan terkumpul rapi.' },
-  { icon: CalendarCheck, title: 'Tindakan cepat', desc: 'Tinjau dan putuskan langsung dari sini.' },
-  { icon: FileCheck2, title: 'Lampiran lengkap', desc: 'Setiap permohonan membawa berkas PDF.' },
-]
-
-export default function LoginPage({ onSignIn }: Props) {
+export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const { signIn } = useSessionCtx()
+  const navigate = useNavigate()
 
-  const submit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setBusy(true)
     setError('')
+    setLoading(true)
     try {
-      await onSignIn(email, password)
+      await signIn(email, password)
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal masuk')
     } finally {
-      setBusy(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-2">
-      <aside className="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary-foreground text-primary">
-            <LayoutDashboard className="size-5" />
-          </div>
-          <span className="text-lg font-semibold">Reservasi Layanan</span>
+    <div className="flex min-h-screen bg-background">
+      <div
+        className="hidden lg:flex lg:w-1/2 items-center justify-center relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #0d47a1, #2196f3)' }}
+      >
+        <div className="z-10 text-center text-white px-12">
+          <h1 className="text-4xl font-bold mb-4">Sistem Reservasi</h1>
+          <p className="text-lg opacity-90">Manajemen permohonan layanan instansi</p>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight">
-            Kelola permohonan layanan dalam satu dasbor.
-          </h1>
-          <div className="space-y-4">
-            {pillars.map((p) => (
-              <div key={p.title} className="flex items-start gap-3">
-                <p.icon className="mt-0.5 size-5 shrink-0" />
-                <div>
-                  <p className="font-medium">{p.title}</p>
-                  <p className="text-sm opacity-80">{p.desc}</p>
-                </div>
+      <div className="flex w-full lg:w-1/2 items-center justify-center bg-background p-8">
+        <div className="w-full max-w-sm space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Masuk</h2>
+            <p className="text-muted-foreground mt-1">Gunakan akun Anda</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-xl bg-destructive/10 border-l-4 border-destructive p-3 text-sm text-destructive">
+                {error}
               </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="text-sm opacity-70">Area administrator · Hanya untuk petugas terverifikasi.</p>
-      </aside>
-
-      <main className="flex items-center justify-center p-4">
-        <form onSubmit={submit} className="w-full max-w-sm space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="admin@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="h-11"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="h-11"
-            />
-          </div>
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="size-4" />
-              {error}
+            )}
+            <div>
+              <label className="text-sm font-medium text-foreground">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors"
+                required
+              />
             </div>
-          )}
-          <Button type="submit" className="w-full" size="lg" disabled={busy}>
-            {busy ? 'Memasuki…' : 'Masuk'}
-          </Button>
-        </form>
-      </main>
+            <div>
+              <label className="text-sm font-medium text-foreground">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dim disabled:opacity-50 transition-all"
+            >
+              {loading ? 'Masuk…' : 'Masuk'}
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }

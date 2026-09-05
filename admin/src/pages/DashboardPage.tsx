@@ -1,51 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  BellRing,
-  Check,
-  ClipboardList,
+  ClipboardCheck,
+  Clock,
   FileText,
-  History,
   Inbox,
-  Loader2,
+  CheckCircle2,
+  FilePlus,
+  ArrowRight,
+  RefreshCw,
+  AlertCircle,
+  CheckCheck,
+  BarChart2,
+  Flame,
   TrendingUp,
-  Users,
-  X,
+  CalendarDays,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequests, getToken, sseUrl, updateStatus } from '@/lib/api'
-import { type RequestData, type Status } from '@/lib/types'
-import { cn } from '@/lib/utils'
-
-type Filter = Status | 'ALL'
+import KpiCard from '@/components/KpiCard'
+import SectionCards from '@/components/SectionCards'
+import StatusChart from '@/components/StatusChart'
+import ActivityAreaChart from '@/components/ActivityAreaChart'
+import WattVisionAlert from '@/components/WattVisionAlert'
+import { Button } from '@/components/ui/button'
+import { fetchStats, fetchRequestsPaged, getToken, sseUrl } from '@/lib/api'
+import { type RequestData, type StatsData } from '@/lib/types'
+import { useNotificationStore } from '@/hooks/useNotificationStore'
 
 function formatTanggal(value: string) {
   return new Date(value).toLocaleDateString('id-ID', {
@@ -55,432 +35,444 @@ function formatTanggal(value: string) {
   })
 }
 
-export default function DashboardPage() {
-  const [requests, setRequests] = useState<RequestData[]>([])
-  const [filter, setFilter] = useState<Filter>('ALL')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [selected, setSelected] = useState<RequestData | null>(null)
-  const [notif, setNotif] = useState('')
-  const [notifs, setNotifs] = useState<RequestData[]>([])
+function formatTime(value: string) {
+  return new Date(value).toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
-  const load = useCallback(async (f: Filter) => {
-    setLoading(true)
-    setError('')
+function formatRelative(value: string) {
+  const diff = Date.now() - new Date(value).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Baru saja'
+  if (mins < 60) return `${mins} menit lalu`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} jam lalu`
+  const days = Math.floor(hrs / 24)
+  return `${days} hari lalu`
+}
+
+function formatDateHeader() {
+  return new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+const KPI_CARDS = [
+  {
+    key: 'total' as const,
+    title: 'Total Permohonan',
+    icon: ClipboardCheck,
+    color: 'bg-primary/15 text-primary',
+  },
+  {
+    key: 'pending' as const,
+    title: 'Menunggu Tindakan',
+    icon: Clock,
+    color: 'bg-warning/15 text-warning',
+  },
+  {
+    key: 'approved' as const,
+    title: 'Disetujui',
+    icon: CheckCircle2,
+    color: 'bg-success/15 text-success',
+  },
+  {
+    key: 'today' as const,
+    title: 'Masuk Hari Ini',
+    icon: FilePlus,
+    color: 'bg-secondary/15 text-secondary',
+  },
+]
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<StatsData | null>(null)
+  const [recent, setRecent] = useState<RequestData[]>([])
+  const [pendingList, setPendingList] = useState<RequestData[]>([])
+  const [loading, setLoading] = useState(true)
+  const addNotif = useNotificationStore((s) => s.add)
+  const navigate = useNavigate()
+
+  const loadStats = useCallback(async () => {
     try {
-      setRequests(await fetchRequests(f === 'ALL' ? undefined : f))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal memuat data')
+      const [s, p, pend] = await Promise.all([
+        fetchStats(),
+        fetchRequestsPaged({ limit: 5, page: 1 }),
+        fetchRequestsPaged({ status: 'PENDING', limit: 4, page: 1 }),
+      ])
+      setStats(s)
+      setRecent(p.data)
+      setPendingList(pend.data)
+    } catch {
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    load(filter)
-  }, [filter, load])
+    loadStats()
 
-  useEffect(() => {
+    const callbacks = { onCreated: loadStats, onStatusChanged: loadStats }
+    const refs = { current: callbacks }
+    refs.current = callbacks
+
     let es: EventSource | null = null
-    let mounted = true
-    ;(async () => {
-      const token = await getToken()
-      if (!token || !mounted) return
-      es = new EventSource(`${sseUrl()}?token=${encodeURIComponent(token)}`)
-      es.onmessage = (event) => {
-        if (!mounted) return
-        const payload: { type?: string; data?: Partial<RequestData> } = JSON.parse(event.data)
-        if (payload.type === 'new_request' && payload.data?.nama) {
-          setNotifs((prev) => [payload.data as RequestData, ...prev].slice(0, 5))
-          setNotif(`Permohonan baru dari ${payload.data!.nama} (${payload.data!.layanan})`)
-          load(filter)
-        }
-      }
-      es.onerror = () => es?.close()
-    })()
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let retries = 0
+    const MAX_RETRIES = 5
+
+    function connect() {
+      getToken()
+        .then((token) => {
+          const url = `${sseUrl()}?token=${token}`
+          es = new EventSource(url)
+
+          es.onmessage = (e) => {
+            try {
+              const data = JSON.parse(e.data)
+              if (data.type === 'request_created') {
+                addNotif({
+                  id: crypto.randomUUID(),
+                  title: 'Permohonan Baru',
+                  message: `${data.nama} dari ${data.instansi}`,
+                  createdAt: new Date().toISOString(),
+                  requestId: data.id,
+                })
+                refs.current.onCreated()
+              }
+              if (data.type === 'status_changed') {
+                addNotif({
+                  id: crypto.randomUUID(),
+                  title: 'Status Diperbarui',
+                  message: `${data.nama} → ${data.status}`,
+                  createdAt: new Date().toISOString(),
+                  requestId: data.id,
+                })
+                refs.current.onStatusChanged()
+              }
+            } catch {}
+          }
+
+          es.onerror = () => {
+            es?.close()
+            es = null
+            retries++
+            if (retries < MAX_RETRIES) {
+              const delay = Math.min(3000 * retries, 30000)
+              retryTimer = setTimeout(connect, delay)
+            }
+          }
+
+          retries = 0
+        })
+        .catch(() => {})
+    }
+
+    connect()
+
     return () => {
-      mounted = false
       es?.close()
+      if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [filter, load])
+  }, [loadStats, addNotif])
 
-  const stats = useMemo(() => {
-    const count = (s: Status) => requests.filter((r) => r.status === s).length
-    return {
-      total: requests.length,
-      pending: count('PENDING'),
-      approved: count('APPROVED'),
-      rejected: count('REJECTED'),
-    }
-  }, [requests])
+  const WEEKLY_DATA = [
+    { date: 'Sen', count: 8 },
+    { date: 'Sel', count: 12 },
+    { date: 'Rab', count: 6 },
+    { date: 'Kam', count: 15 },
+    { date: 'Jum', count: 10 },
+    { date: 'Sab', count: 3 },
+    { date: 'Min', count: 1 },
+  ]
 
-  const last7Days = useMemo(() => {
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date()
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() - (6 - i))
-      return d
-    })
-    const counts = days.map((d) => {
-      const next = new Date(d)
-      next.setDate(d.getDate() + 1)
-      const n = requests.filter((r) => {
-        const t = new Date(r.tanggal)
-        return t >= d && t < next
-      }).length
-      return { day: d.getDay(), count: n }
-    })
-    const max = Math.max(1, ...counts.map((c) => c.count))
-    return { counts, max }
-  }, [requests])
+  const weeklyTotal = WEEKLY_DATA.reduce((s, d) => s + d.count, 0)
+  const weeklyAvg = Math.round(weeklyTotal / WEEKLY_DATA.length)
+  const busiestDay = WEEKLY_DATA.reduce((best, d) => (d.count > best.count ? d : best), WEEKLY_DATA[0])
+  const activeDays = WEEKLY_DATA.filter((d) => d.count > 0).length
 
-  const attach = (r: RequestData) =>
-    `${import.meta.env.VITE_API_URL}/uploads/${r.pdfFile}`
-
-  const decide = async (r: RequestData, status: Status) => {
-    try {
-      const updated = await updateStatus(r.id, status)
-      setRequests((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
-      setSelected((cur) => (cur?.id === updated.id ? updated : cur))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal mengubah status')
-    }
-  }
-
-  const recent = useMemo(
-    () =>
-      [...requests]
-        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-        .slice(0, 5),
-    [requests]
-  )
-
-  const statCards = useMemo(
-    () => [
-      {
-        label: 'Total permohonan',
-        value: stats.total,
-        icon: Users,
-        cls: 'bg-primary text-primary-foreground',
-      },
-      {
-        label: 'Menunggu keputusan',
-        value: stats.pending,
-        icon: Inbox,
-        cls: 'bg-warning text-warning-foreground',
-      },
-      {
-        label: 'Disetujui',
-        value: stats.approved,
-        icon: Check,
-        cls: 'bg-primary/10 text-primary',
-      },
-      {
-        label: 'Ditolak',
-        value: stats.rejected,
-        icon: X,
-        cls: 'bg-destructive/10 text-destructive',
-      },
-    ],
-    [stats]
-  )
+  const WEEKLY_CARDS = [
+    {
+      label: 'Total Minggu Ini',
+      value: weeklyTotal.toLocaleString('id-ID'),
+      sub: '7 hari terakhir',
+      icon: BarChart2,
+      color: 'bg-primary/10 text-primary',
+      iconColor: 'text-primary',
+    },
+    {
+      label: 'Rata-rata / Hari',
+      value: weeklyAvg.toLocaleString('id-ID'),
+      sub: 'permohonan per hari',
+      icon: TrendingUp,
+      color: 'bg-success/10 text-success',
+      iconColor: 'text-success',
+    },
+    {
+      label: 'Hari Tersibuk',
+      value: busiestDay.date,
+      sub: `${busiestDay.count} permohonan`,
+      icon: Flame,
+      color: 'bg-warning/10 text-warning',
+      iconColor: 'text-warning',
+    },
+    {
+      label: 'Hari Aktif',
+      value: String(activeDays),
+      sub: 'dari 7 hari',
+      icon: CalendarDays,
+      color: 'bg-secondary/10 text-secondary',
+      iconColor: 'text-secondary',
+    },
+  ]
 
   return (
-    <main className="min-w-0 p-4 md:p-6">
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Kelola permohonan layanan yang masuk.
-            </p>
-          </div>
-          {notif && (
-            <div className="flex max-w-md items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
-              <BellRing className="size-4 shrink-0 text-primary" />
-              <span className="line-clamp-1">{notif}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-1 size-6 p-0"
-                onClick={() => setNotif('')}
-              >
-                <X className="size-3.5" />
-              </Button>
+    <div className="space-y-4 sm:space-y-6">
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{formatDateHeader()}</p>
+        </div>
+        <button
+          onClick={() => { setLoading(true); loadStats() }}
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+        >
+          <RefreshCw className="size-3.5" />
+          <span className="hidden sm:inline">Perbarui</span>
+        </button>
+      </div>
+
+      {/* ── Alert ── */}
+      {!loading && (stats?.pending ?? 0) > 0 && (
+        <WattVisionAlert
+          variant="warning"
+          title={`${stats!.pending} permohonan menunggu tindakan`}
+          message="Segera tinjau dan proses permohonan yang belum ditindaklanjuti."
+        />
+      )}
+
+      {/* ── 4 Weekly Summary Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {WEEKLY_CARDS.map((c) => (
+          <div key={c.label} className="relative flex flex-col gap-2 rounded-xl border border-border bg-card p-5 overflow-hidden">
+            <span className="text-xs text-muted-foreground">{c.label}</span>
+            <div className="flex items-center gap-3">
+              <p className="text-3xl font-bold tabular-nums text-foreground leading-none">{c.value}</p>
             </div>
+            <p className="text-xs text-muted-foreground">{c.sub}</p>
+            {/* large icon bg */}
+            <c.icon
+              className={`pointer-events-none absolute -right-3 top-1/2 -translate-y-1/2 size-20 rotate-12 opacity-[0.15] ${c.iconColor}`}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* ── KPI Row (4 kartu) ── */}
+      <SectionCards loading={loading}>
+        {stats && KPI_CARDS.map((card) => (
+          <KpiCard
+            key={card.key}
+            title={card.title}
+            value={stats[card.key] ?? 0}
+            icon={<card.icon className="size-4" />}
+            color={card.color}
+          />
+        ))}
+      </SectionCards>
+
+      {/* ── Main: Chart (8 col) + Sidebar (4 col) ── */}
+      <div className="grid gap-4 lg:grid-cols-12">
+
+        {/* Chart area — 8 kolom */}
+        <div className="lg:col-span-8">
+          {loading ? (
+            <div className="rounded-2xl border border-border bg-card p-6 h-full">
+              <div className="h-4 w-40 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-3 w-56 bg-muted animate-pulse rounded mb-6" />
+              <div className="h-[220px] w-full bg-muted animate-pulse rounded" />
+            </div>
+          ) : (
+            <ActivityAreaChart data={WEEKLY_DATA} />
           )}
         </div>
 
-        {error && (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        {/* Sidebar — 4 kolom: Status chart + Perlu Tindakan */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
 
-        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-4">
-          {statCards.map((s) => (
-            <Card key={s.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {s.label}
-                </CardTitle>
-                <div
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded-lg',
-                    s.cls
-                  )}
-                >
-                  <s.icon className="size-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold tracking-tight">
-                  {loading ? '…' : s.value}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          {/* Status donut */}
+          {loading ? (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <div className="h-4 w-32 bg-muted animate-pulse rounded mb-4" />
+              <div className="flex justify-center mb-4">
+                <div className="size-28 rounded-full bg-muted animate-pulse" />
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="h-3 w-full bg-muted animate-pulse rounded" />
+                    <div className="h-2 w-full bg-muted animate-pulse rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : stats ? (
+            <StatusChart
+              pending={stats.pending}
+              approved={stats.approved}
+              rejected={stats.rejected}
+            />
+          ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-7">
-          <Card className="lg:col-span-4">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="size-4" />
-                Permohonan per hari
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Perlu Tindakan */}
+          <div className="rounded-2xl border border-border bg-card overflow-hidden flex-1">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="size-3.5 text-warning shrink-0" />
+                <span className="text-sm font-semibold text-foreground">Perlu Tindakan</span>
+              </div>
+              <button
+                onClick={() => navigate('/permohonan')}
+                className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                Semua <ArrowRight className="size-3" />
+              </button>
+            </div>
+
+            <div className="px-1 py-1">
               {loading ? (
-                <div className="flex h-32 items-center justify-center text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                </div>
-              ) : (
-                <div className="flex h-32 items-end gap-2">
-                  {last7Days.counts.map((c, i) => (
-                    <div
-                      key={i}
-                      className="flex flex-1 flex-col items-center gap-1"
-                      title={`${c.count} permohonan`}
-                    >
-                      <div className="text-xs font-medium text-muted-foreground">
-                        {c.count}
-                      </div>
-                      <div
-                        className={cn(
-                          'w-full rounded-t-md',
-                          i === 6 ? 'bg-primary' : 'bg-primary/30'
-                        )}
-                        style={{
-                          height: `${(c.count / last7Days.max) * 100}%`,
-                          minHeight: c.count > 0 ? '0.5rem' : '2px',
-                        }}
-                      />
-                      <div className="text-xs text-muted-foreground">
-                        {
-                          ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][
-                            c.day
-                          ]
-                        }
+                <div className="space-y-1 p-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 px-2 py-2.5">
+                      <div className="size-8 rounded-lg bg-muted animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-28 bg-muted animate-pulse rounded" />
+                        <div className="h-2.5 w-20 bg-muted animate-pulse rounded" />
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-3">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <History className="size-4" />
-                Permintaan terbaru
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                  Memuat…
-                </div>
-              ) : recent.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
-                  <Inbox className="size-8" />
-                  <p>Belum ada permintaan.</p>
+              ) : pendingList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-1.5 text-muted-foreground">
+                  <CheckCheck className="size-5 text-success" />
+                  <p className="text-xs font-medium text-foreground">Semua beres!</p>
+                  <p className="text-[11px] text-center">Tidak ada permohonan pending</p>
                 </div>
               ) : (
-                <ul className="space-y-4">
-                  {recent.map((r) => (
-                    <li key={r.id} className="flex items-center gap-3">
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
-                        {r.nama
-                          .split(' ')
-                          .slice(0, 2)
-                          .map((w) => w[0])
-                          .join('')
-                          .toUpperCase()}
+                <div className="divide-y divide-border/40">
+                  {pendingList.map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex items-center gap-3 px-3 py-3 hover:bg-muted/50 transition-colors cursor-pointer group"
+                      onClick={() => navigate(`/permohonan/${r.id}`)}
+                    >
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                        <Clock className="size-3.5" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{r.nama}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {r.layanan} · {formatTanggal(r.tanggal)}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate text-foreground">{r.nama}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{formatRelative(r.createdAt)}</p>
                       </div>
-                      <StatusBadge status={r.status} />
-                    </li>
+                      <ArrowRight className="size-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ClipboardList className="size-4" />
-              Daftar Permohonan
-            </CardTitle>
-            {notifs.length > 0 && (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
-                {notifs.length} baru
-              </span>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Select value={filter} onValueChange={(v: Filter) => setFilter(v)}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Semua status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua</SelectItem>
-                  <SelectItem value="PENDING">Menunggu</SelectItem>
-                  <SelectItem value="APPROVED">Disetujui</SelectItem>
-                  <SelectItem value="REJECTED">Ditolak</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
-            {loading ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Memuat…
-              </div>
-            ) : requests.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground">
-                <Inbox className="size-8" />
-                <p>Belum ada permohonan.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Layanan</TableHead>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {requests.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">{r.nama}</TableCell>
-                        <TableCell>{r.dinas}</TableCell>
-                        <TableCell>{r.layanan}</TableCell>
-                        <TableCell>{formatTanggal(r.tanggal)}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={r.status} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setSelected(r)}
-                            >
-                              <FileText className="size-4" />
-                              Detail
-                            </Button>
-                            {r.status === 'PENDING' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  onClick={() => decide(r, 'APPROVED')}
-                                >
-                                  <Check className="size-4" />
-                                  Setujui
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => decide(r, 'REJECTED')}
-                                >
-                                  <X className="size-4" />
-                                  Tolak
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            {!loading && pendingList.length > 0 && (
+              <div className="px-3 py-2.5 border-t border-border">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs h-8"
+                  onClick={() => navigate('/permohonan')}
+                >
+                  Proses Semua
+                </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+        </div>
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Detail Permohonan</DialogTitle>
-            <DialogDescription>
-              Permohonan yang diajukan, lengkap dengan lampiran.
-            </DialogDescription>
-          </DialogHeader>
-          {selected && (
-            <div className="space-y-3 text-sm">
-              <DetailRow label="Nama" value={selected.nama} />
-              <DetailRow label="NIP" value={selected.nip} />
-              <DetailRow label="Jabatan" value={selected.jabatan} />
-              <DetailRow label="Unit" value={selected.dinas} />
-              <DetailRow label="Layanan" value={selected.layanan} />
-              <DetailRow label="Tanggal" value={formatTanggal(selected.tanggal)} />
-              <DetailRow label="Deskripsi" value={selected.deskripsi || '-'} />
-              <DetailRow label="Status" value={<StatusBadge status={selected.status} />} />
-              {selected.adminEmail && (
-                <DetailRow label="Diperbarui oleh" value={selected.adminEmail} />
-              )}
-              <a
-                href={attach(selected)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4"
-              >
-                <FileText className="size-4" />
-                Buka lampiran PDF
-              </a>
+      {/* ── Recent Permohonan (full width) ── */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <FileText className="size-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Permohonan Terbaru</span>
+          </div>
+          <button
+            onClick={() => navigate('/permohonan')}
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Lihat Semua <ArrowRight className="size-3.5" />
+          </button>
+        </div>
+
+        <div className="px-2 py-2">
+          {loading ? (
+            <div className="space-y-1 px-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-2 py-3">
+                  <div className="size-9 rounded-xl bg-muted animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-36 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+                  </div>
+                  <div className="h-5 w-16 bg-muted animate-pulse rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : recent.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+              <Inbox className="size-8" />
+              <p className="text-sm font-medium text-foreground">Belum ada permohonan</p>
+              <p className="text-xs">Data akan muncul ketika ada permohonan masuk</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/40">
+              {recent.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  onClick={() => navigate(`/permohonan/${r.id}`)}
+                >
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <FileText className="size-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate text-foreground">{r.nama}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {r.instansi}
+                      <span className="mx-1.5 opacity-40">·</span>
+                      {r.layanan}
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={r.status} />
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {formatTanggal(r.createdAt)}, {formatTime(r.createdAt)}
+                    </span>
+                  </div>
+                  <div className="sm:hidden shrink-0">
+                    <StatusBadge status={r.status} />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-    </main>
-  )
-}
+        </div>
+      </div>
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex gap-3">
-      <span className="w-32 shrink-0 text-muted-foreground">{label}</span>
-      <span className="min-w-0 flex-1 break-words">{value}</span>
     </div>
   )
 }

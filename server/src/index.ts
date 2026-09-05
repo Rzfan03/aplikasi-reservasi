@@ -5,7 +5,7 @@ import multer from 'multer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { requestsRouter } from './routes/requests.js'
-import { layananRouter } from './routes/layanan.js'
+import { layananRouter, instansiRouter } from './routes/layanan.js'
 import { uploadsDir } from './upload.js'
 import { requireAdmin } from './middleware/requireAdmin.js'
 import { subscribe } from './sse.js'
@@ -38,6 +38,7 @@ app.get('/api/requests/events', requireAdmin, (req, res) => {
 
 app.use('/api/requests', requestsRouter)
 app.use('/api/layanan', layananRouter)
+app.use('/api/instansi', instansiRouter)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {

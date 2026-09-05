@@ -1,275 +1,198 @@
-import { useEffect, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronLeft, Loader2, Pencil, Plus, Save, Tags, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Plus, Pencil, Trash2, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createLayanan, deleteLayanan, fetchLayanan, updateLayanan } from '@/lib/api'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { fetchLayanan, createLayanan, updateLayanan, deleteLayanan } from '@/lib/api'
 import type { LayananData } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function LayananPage() {
-  const [layanan, setLayanan] = useState<LayananData[]>([])
+  const [items, setItems] = useState<LayananData[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [open, setOpen] = useState(false)
+  const [edit, setEdit] = useState<LayananData | null>(null)
   const [nama, setNama] = useState('')
-  const [urutan, setUrutan] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [editing, setEditing] = useState<LayananData | null>(null)
+  const [urutan, setUrutan] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [error, setError] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
-    setError('')
     try {
-      setLayanan(await fetchLayanan())
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal memuat layanan')
-    } finally {
+      setItems(await fetchLayanan())
+    } catch {} finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    load()
   }, [])
 
-  const resetForm = () => {
+  useEffect(() => { load() }, [load])
+
+  function openAdd() {
+    setEdit(null)
     setNama('')
-    setUrutan('')
-    setEditing(null)
-  }
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmed = nama.trim()
-    if (!trimmed || busy) return
-    setBusy(true)
+    setUrutan(items.length + 1)
     setError('')
-    try {
-      if (editing) {
-        const updated = await updateLayanan(editing.id, {
-          nama: trimmed,
-          urutan: urutan ? Number(urutan) : undefined,
-        })
-        setLayanan((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
-      } else {
-        const created = await createLayanan(trimmed, urutan ? Number(urutan) : layanan.length + 1)
-        setLayanan((prev) => [...prev, created])
-      }
-      resetForm()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan layanan')
-    } finally {
-      setBusy(false)
-    }
+    setOpen(true)
   }
 
-  const startEdit = (item: LayananData) => {
-    setEditing(item)
+  function openEdit(item: LayananData) {
+    setEdit(item)
     setNama(item.nama)
-    setUrutan(String(item.urutan))
+    setUrutan(item.urutan)
     setError('')
+    setOpen(true)
   }
 
-  const move = async (item: LayananData, dir: 1 | -1) => {
-    const sorted = [...layanan].sort((a, b) => a.urutan - b.urutan)
-    const idx = sorted.findIndex((x) => x.id === item.id)
-    const swap = sorted[idx + dir]
-    if (!swap) return
-    setError('')
+  async function handleSave() {
+    if (!nama.trim()) {
+      setError('Nama layanan wajib diisi')
+      return
+    }
+    setSaving(true)
     try {
-      await Promise.all([
-        updateLayanan(item.id, { urutan: swap.urutan }),
-        updateLayanan(swap.id, { urutan: item.urutan }),
-      ])
-      await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal mengubah urutan')
+      if (edit) {
+        await updateLayanan(edit.id, { nama: nama.trim(), urutan })
+      } else {
+        await createLayanan(nama.trim(), urutan)
+      }
+      setOpen(false)
+      load()
+    } catch {
+      setError('Gagal menyimpan')
+    } finally {
+      setSaving(false)
     }
   }
 
-  const remove = async (item: LayananData) => {
-    if (!confirm(`Hapus layanan "${item.nama}"?`)) return
-    setError('')
+  async function handleDelete(id: string) {
+    setDeleting(id)
     try {
-      await deleteLayanan(item.id)
-      setLayanan((prev) => prev.filter((x) => x.id !== item.id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menghapus layanan')
+      await deleteLayanan(id)
+      load()
+    } catch {} finally {
+      setDeleting(null)
     }
   }
-
-  const sorted = [...layanan].sort((a, b) => a.urutan - b.urutan)
 
   return (
-    <main className="min-w-0 p-4 md:p-6">
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Tags className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Layanan</h1>
-            <p className="text-sm text-muted-foreground">
-              Atur pilihan layanan yang tampil di form permohonan.
-            </p>
-          </div>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Layanan</h1>
+          <p className="text-sm text-muted-foreground">Kelola daftar layanan</p>
         </div>
-
-        {error && (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              {editing ? (
-                <>
-                  <Pencil className="size-4" />
-                  Ubah layanan
-                </>
-              ) : (
-                <>
-                  <Plus className="size-4" />
-                  Tambah layanan
-                </>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={submit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
-                <div className="space-y-2">
-                  <Label htmlFor="nama">Nama layanan</Label>
-                  <Input
-                    id="nama"
-                    value={nama}
-                    onChange={(e) => setNama(e.target.value)}
-                    placeholder="cth: Ruang Kelas, Pengadaan ATK"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="urutan">Urutan</Label>
-                  <Input
-                    id="urutan"
-                    type="number"
-                    min={1}
-                    value={urutan}
-                    onChange={(e) => setUrutan(e.target.value)}
-                    placeholder="Auto"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={busy || !nama.trim()}>
-                  {busy ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Menyimpan…
-                    </>
-                  ) : editing ? (
-                    <>
-                      <Save className="size-4" />
-                      Simpan perubahan
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="size-4" />
-                      Tambah
-                    </>
-                  )}
-                </Button>
-                {editing && (
-                  <Button type="button" variant="ghost" onClick={resetForm}>
-                    <ChevronLeft className="size-4" />
-                    Batal
-                  </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Tags className="size-4" />
-              Daftar layanan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Memuat…
-              </div>
-            ) : sorted.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground">
-                Belum ada layanan. Tambahkan layanan pertama dengan form di atas.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {sorted.map((item, i) => (
-                  <li
-                    key={item.id}
-                    className={cn(
-                      'flex items-center gap-3 py-3',
-                      editing?.id === item.id && 'opacity-60'
-                    )}
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-semibold text-accent-foreground">
-                      {item.urutan}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {item.nama}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => move(item, -1)}
-                        disabled={i === 0}
-                        aria-label={`Naikkan ${item.nama}`}
-                      >
-                        <ArrowUp className="size-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => move(item, 1)}
-                        disabled={i === sorted.length - 1}
-                        aria-label={`Turunkan ${item.nama}`}
-                      >
-                        <ArrowDown className="size-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => startEdit(item)}
-                        aria-label={`Ubah ${item.nama}`}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => remove(item)}
-                        aria-label={`Hapus ${item.nama}`}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <Button onClick={openAdd} className="shrink-0">
+          <Plus className="mr-2 size-4" /> Tambah
+        </Button>
       </div>
-    </main>
+
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="divide-y divide-border">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4">
+                  <Skeleton className="h-4 w-6" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-8 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <LayoutGrid className="mb-3 size-8" />
+              <p>Belum ada layanan</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {items.map((item, i) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 px-6 py-3.5 hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-xs text-muted-foreground tabular-nums w-6 text-right shrink-0">
+                    {i + 1}
+                  </span>
+                  <p className="flex-1 min-w-0 truncate font-medium text-foreground">
+                    {item.nama}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-8"
+                      onClick={() => openEdit(item)}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={deleting === item.id}
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{edit ? 'Edit Layanan' : 'Tambah Layanan'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="nama">Nama layanan</Label>
+              <Input
+                id="nama"
+                value={nama}
+                onChange={(e) => {
+                  setNama(e.target.value)
+                  if (error) setError('')
+                }}
+                placeholder="Contoh: Penerbitan SK"
+                autoFocus
+              />
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="urutan">Urutan</Label>
+              <Input
+                id="urutan"
+                type="number"
+                min={1}
+                value={urutan}
+                onChange={(e) => setUrutan(+e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? 'Menyimpan…' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

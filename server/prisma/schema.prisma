@@ -20,9 +20,15 @@ model Layanan {
   createdAt DateTime @default(now())
 }
 
+model Instansi {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  createdAt DateTime @default(now())
+}
+
 model Request {
   id          String   @id @default(cuid())
-  dinas       String
+  instansi    String
   nama        String
   nip         String
   jabatan     String

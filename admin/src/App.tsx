@@ -1,92 +1,96 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { PanelLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import AppSidebar from './components/AppSidebar'
+import SiteHeader from './components/SiteHeader'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import LayananPage from './pages/LayananPage'
-import { useSession } from './lib/useSession'
+import InstansiPage from './pages/InstansiPage'
+import PermohonanPage from './pages/PermohonanPage'
+import PermohonanDetailPage from './pages/PermohonanDetailPage'
+import NotifPage from './pages/NotifPage'
+import PengaturanPage from './pages/PengaturanPage'
+import { SessionProvider, useSessionCtx } from './lib/SessionProvider'
+import { NotifProvider } from './components/NotifProvider'
+import { SettingsProvider } from './components/SettingsProvider'
 
-function AdminLayout({
-  children,
-  user,
-}: {
-  children: React.ReactNode
-  user: ReturnType<typeof useSession>['user']
-}) {
-  const { signOut } = useSession()
+function AdminLayout() {
+  const { user, loading, signOut } = useSessionCtx()
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm">Memuat…</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) return <Navigate to="/login" replace />
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={{
+        '--sidebar-width': 'calc(var(--spacing) * 72)',
+        '--header-height': 'calc(var(--spacing) * 12)',
+      } as React.CSSProperties}
+    >
       <AppSidebar user={user} onSignOut={signOut} />
-      <SidebarInset className="bg-background">
-        <header className="flex items-center gap-2 border-b bg-card px-4 py-2">
-          <SidebarTrigger>
-            <Button variant="ghost" size="icon">
-              <PanelLeft className="size-4" />
-            </Button>
-          </SidebarTrigger>
-        </header>
-        {children}
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
+              <Routes>
+                <Route index element={<DashboardPage />} />
+                <Route path="layanan" element={<LayananPage />} />
+                <Route path="instansi" element={<InstansiPage />} />
+                <Route path="permohonan" element={<PermohonanPage />} />
+                <Route path="permohonan/:id" element={<PermohonanDetailPage />} />
+                <Route path="notifikasi" element={<NotifPage />} />
+                <Route path="pengaturan" element={<PengaturanPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
+          </div>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )
 }
 
-function Guard({
-  user,
-  loading,
-  children,
-}: {
-  user: ReturnType<typeof useSession>['user']
-  loading: boolean
-  children: React.ReactNode
-}) {
+function LoginPageGuard() {
+  const { user, loading } = useSessionCtx()
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
-        Memuat…
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm">Memuat…</span>
+        </div>
       </div>
     )
   }
-  return user ? children : <Navigate to="/login" replace />
+
+  if (user) return <Navigate to="/" replace />
+
+  return <LoginPage />
 }
 
 export default function App() {
-  const { user, loading, signIn } = useSession()
-
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/" replace /> : <LoginPage onSignIn={signIn} />}
-      />
-      <Route
-        path="/"
-        element={
-          <Guard user={user} loading={loading}>
-            <AdminLayout user={user}>
-              <DashboardPage />
-            </AdminLayout>
-          </Guard>
-        }
-      />
-      <Route
-        path="/layanan"
-        element={
-          <Guard user={user} loading={loading}>
-            <AdminLayout user={user}>
-              <LayananPage />
-            </AdminLayout>
-          </Guard>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <SettingsProvider>
+      <SessionProvider>
+        <NotifProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPageGuard />} />
+            <Route path="/*" element={<AdminLayout />} />
+          </Routes>
+        </NotifProvider>
+      </SessionProvider>
+    </SettingsProvider>
   )
 }

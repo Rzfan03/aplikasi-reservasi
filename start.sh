@@ -5,8 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Free busy ports from a previous run.
 for port in 4000 5173 5174; do
-  pid="$(lsof -ti tcp:$port 2>/dev/null || true)"
-  [ -n "$pid" ] && kill -9 $pid 2>/dev/null || true
+  fuser -k "$port/tcp" 2>/dev/null || true
 done
 sleep 1
 

@@ -2,7 +2,7 @@ export type Status = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export interface RequestData {
   id: string
-  dinas: string
+  instansi: string
   nama: string
   nip: string
   jabatan: string
@@ -22,6 +22,20 @@ export interface LayananData {
   nama: string
   urutan: number
   createdAt: string
+}
+
+export interface InstansiData {
+  id: string
+  nama: string
+  createdAt: string
+}
+
+export interface StatsData {
+  total: number
+  pending: number
+  approved: number
+  rejected: number
+  today: number
 }
 
 export const STATUS_LABEL: Record<Status, string> = {
