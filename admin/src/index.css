@@ -152,3 +152,32 @@ html[data-palette="emerald"] {
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body { overflow: visible; }
+  [data-sidebar],
+  .fixed.inset-x-0.bottom-0,
+  header,
+  nav,
+  button {
+    display: none !important;
+  }
+  .sticky.top-0 {
+    position: static !important;
+  }
+  .card,
+  .card-content {
+    border: 1px solid #d4d4d8 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  @page {
+    margin: 1cm;
+    size: A4 portrait;
+  }
+}

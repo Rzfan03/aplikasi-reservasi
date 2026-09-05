@@ -39,7 +39,7 @@ export default function SiteHeader() {
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3 sm:px-4 sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
-      <SidebarTrigger className="-ml-1 shrink-0" />
+       <SidebarTrigger className="-ml-1 shrink-0 hidden md:flex" />
       <Separator orientation="vertical" className="h-4 shrink-0" />
 
       {/* Mobile: hanya tampil nama halaman saat ini */}

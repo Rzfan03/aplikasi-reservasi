@@ -41,19 +41,6 @@ requestsRouter.post('/', uploadPdf.single('pdf'), async (req, res) => {
   }
 })
 
-// User check status by token
-requestsRouter.get('/:statusToken', async (req, res) => {
-  const request = await prisma.request.findUnique({
-    where: { statusToken: req.params.statusToken },
-  })
-  if (!request) { res.status(404).json({ error: 'Not found' }); return }
-  res.json({
-    id: request.id, instansi: request.instansi, nama: request.nama,
-    layanan: request.layanan, tanggal: request.tanggal, status: request.status,
-    adminEmail: request.adminEmail, rejectReason: request.rejectReason, createdAt: request.createdAt,
-  })
-})
-
 // Admin: stats
 requestsRouter.get('/stats', requireAdmin, async (_req, res) => {
   const [total, pending, approved, rejected, today] = await Promise.all([
@@ -117,7 +104,7 @@ requestsRouter.get('/', requireAdmin, async (req, res) => {
   res.json({ data, total, page: p, limit: l })
 })
 
-// Admin: get one by id (must stay before /:statusToken)
+// Admin: get one by id
 requestsRouter.get('/admin/:id', requireAdmin, async (req, res) => {
   const request = await prisma.request.findUnique({ where: { id: req.params.id } })
   if (!request) { res.status(404).json({ error: 'Not found' }); return }
@@ -143,4 +130,45 @@ requestsRouter.put('/:id/status', requireAdmin, async (req, res) => {
   })
   broadcast({ type: 'status_changed', id: updated.id, nama: updated.nama, status: updated.status, createdAt: updated.createdAt })
   res.json(updated)
+})
+
+// Admin: bulk update status
+requestsRouter.put('/bulk/status', requireAdmin, async (req, res) => {
+  const { ids, status, rejectReason } = req.body
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids harus diisi' }); return
+  }
+  if (!['APPROVED', 'REJECTED'].includes(status)) {
+    res.status(400).json({ error: 'Invalid status' }); return
+  }
+  if (status === 'REJECTED' && !rejectReason?.trim()) {
+    res.status(400).json({ error: 'Alasan penolakan wajib diisi' }); return
+  }
+  const updated = await prisma.request.updateMany({
+    where: { id: { in: ids } },
+    data: {
+      status,
+      adminEmail: req.user?.email,
+      rejectReason: status === 'REJECTED' ? rejectReason.trim() : null,
+    },
+  })
+  broadcast({ type: 'bulk_status_changed', status, count: updated.count })
+  res.json({ count: updated.count })
+})
+
+// User check status by token (must be last)
+requestsRouter.get('/:statusToken', async (req, res) => {
+  const { statusToken } = req.params
+  if (['stats', 'weekly', 'bulk', 'admin'].includes(statusToken)) {
+    res.status(404).json({ error: 'Not found' }); return
+  }
+  const request = await prisma.request.findUnique({
+    where: { statusToken },
+  })
+  if (!request) { res.status(404).json({ error: 'Not found' }); return }
+  res.json({
+    id: request.id, instansi: request.instansi, nama: request.nama,
+    layanan: request.layanan, tanggal: request.tanggal, status: request.status,
+    adminEmail: request.adminEmail, rejectReason: request.rejectReason, createdAt: request.createdAt,
+  })
 })

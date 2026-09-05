@@ -121,6 +121,13 @@ export async function updateStatus(id: string, status: Status, rejectReason?: st
   })
 }
 
+export async function bulkUpdateStatus(ids: string[], status: Status, rejectReason?: string): Promise<{ count: number }> {
+  return request<{ count: number }>('/api/requests/bulk/status', {
+    method: 'PUT',
+    body: JSON.stringify({ ids, status, rejectReason }),
+  })
+}
+
 export async function fetchLayanan(): Promise<LayananData[]> {
   return request<LayananData[]>('/api/layanan')
 }

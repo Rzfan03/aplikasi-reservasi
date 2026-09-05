@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Search, ClipboardList, Download } from 'lucide-react'
+import { FileText, Search, ClipboardList, Download, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequestsPaged } from '@/lib/api'
+import { fetchRequestsPaged, bulkUpdateStatus } from '@/lib/api'
 import { type RequestData, type Status, STATUS_LABEL } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -31,7 +31,7 @@ function csv(rows: Record<string, string>[]) {
 
 export default function PermohonanPage() {
   const [data, setData] = useState<RequestData[]>([])
-  const [total, setTotal] = useState(0)
+  const [total, setTotal] = useState(1)
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState<Filter>('ALL')
   const [search, setSearch] = useState('')
@@ -39,6 +39,8 @@ export default function PermohonanPage() {
   const [dateTo, setDateTo] = useState('')
   const [exporting, setExporting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
   const navigate = useNavigate()
   const LIMIT = 10
 
@@ -55,12 +57,54 @@ export default function PermohonanPage() {
       })
       setData(res.data)
       setTotal(res.total)
+      setSelectedIds(new Set())
     } catch {} finally {
       setLoading(false)
     }
   }, [filter, page, search, dateFrom, dateTo])
 
   useEffect(() => { load() }, [load])
+
+  async function handleToggle(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
+      return next
+    })
+  }
+
+  async function handleToggleAll() {
+    if (selectedIds.size === data.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(data.map((r) => r.id)))
+    }
+  }
+
+  async function handleBulkApprove() {
+    if (!selectedIds.size) return
+    setBulkLoading(true)
+    try {
+      await bulkUpdateStatus([...selectedIds], 'APPROVED')
+      setSelectedIds(new Set())
+      load()
+    } catch {} finally {
+      setBulkLoading(false)
+    }
+  }
+
+  async function handleBulkReject() {
+    if (!selectedIds.size) return
+    if (!window.confirm('Tolak semua permohonan yang dipilih?')) return
+    setBulkLoading(true)
+    try {
+      await bulkUpdateStatus([...selectedIds], 'REJECTED', 'Ditolak admin')
+      setSelectedIds(new Set())
+      load()
+    } catch {} finally {
+      setBulkLoading(false)
+    }
+  }
 
   const totalPages = Math.ceil(total / LIMIT)
 
@@ -105,6 +149,15 @@ export default function PermohonanPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleToggleAll}
+          className="shrink-0"
+          title="Pilih Semua"
+        >
+          <CheckCircle2 className="size-4" />
+        </Button>
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
@@ -153,6 +206,18 @@ export default function PermohonanPage() {
         </Button>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card p-3">
+          <span className="text-sm font-medium text-foreground">{selectedIds.size} dipilih</span>
+          <Button size="sm" onClick={handleBulkApprove} disabled={bulkLoading}>
+            <CheckCircle2 className="mr-1.5 size-4" /> Setujui Semua
+          </Button>
+          <Button variant="destructive" size="sm" onClick={handleBulkReject} disabled={bulkLoading}>
+            <XCircle className="mr-1.5 size-4" /> Tolak Semua
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           {loading ? (
@@ -175,12 +240,19 @@ export default function PermohonanPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {data.map((r) => (
+               {data.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center gap-4 px-6 py-4 hover:bg-muted transition-colors cursor-pointer"
+                  className={`flex items-center gap-4 px-6 py-4 hover:bg-muted transition-colors cursor-pointer ${selectedIds.has(r.id) ? 'bg-muted/50' : ''}`}
                   onClick={() => navigate(`/permohonan/${r.id}`)}
                 >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(r.id)}
+                    onChange={() => handleToggle(r.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 shrink-0 cursor-pointer accent-primary"
+                  />
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                     <FileText className="size-5" />
                   </div>

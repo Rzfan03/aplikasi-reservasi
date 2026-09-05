@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import AppSidebar from './components/AppSidebar'
 import SiteHeader from './components/SiteHeader'
+import BottomNav from './components/BottomNav'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import LayananPage from './pages/LayananPage'
@@ -44,7 +45,7 @@ function AdminLayout() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6 pb-24 md:pb-0">
               <Routes>
                 <Route index element={<DashboardPage />} />
                 <Route path="layanan" element={<LayananPage />} />
@@ -60,6 +61,7 @@ function AdminLayout() {
             </div>
           </div>
         </div>
+        <BottomNav />
       </SidebarInset>
     </SidebarProvider>
   )

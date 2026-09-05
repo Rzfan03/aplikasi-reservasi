@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, FileText, Check, X } from 'lucide-react'
+import { ArrowLeft, FileText, Check, X, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -152,6 +152,9 @@ export default function PermohonanDetailPage() {
           </Button>
           <Button variant="destructive" onClick={() => handleStatus('REJECTED')}>
             <X className="mr-2 size-4" /> Tolak
+          </Button>
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-2 size-4" /> Cetak
           </Button>
         </div>
       )}
