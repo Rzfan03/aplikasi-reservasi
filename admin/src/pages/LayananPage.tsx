@@ -5,12 +5,21 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { fetchLayanan, createLayanan, updateLayanan, deleteLayanan } from '@/lib/api'
 import type { LayananData } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -85,7 +94,7 @@ export default function LayananPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Layanan</h1>
@@ -99,67 +108,113 @@ export default function LayananPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="divide-y divide-border">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 px-6 py-4">
-                  <Skeleton className="h-4 w-6" />
-                  <Skeleton className="h-4 flex-1" />
-                  <Skeleton className="h-8 w-16" />
-                </div>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12 text-center">No</TableHead>
+                  <TableHead>Nama Layanan</TableHead>
+                  <TableHead className="w-20 text-right">Urutan</TableHead>
+                  <TableHead className="w-20 text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-center"><Skeleton className="h-4 w-4 mx-auto" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-14 text-muted-foreground">
               <LayoutGrid className="mb-3 size-8" />
-              <p>Belum ada layanan</p>
+              <p className="text-sm">Belum ada layanan</p>
+              <Button onClick={openAdd} variant="outline" className="mt-4">
+                <Plus className="mr-2 size-4" /> Tambah Layanan
+              </Button>
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {items.map((item, i) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-4 px-6 py-3.5 hover:bg-muted/50 transition-colors"
-                >
-                  <span className="text-xs text-muted-foreground tabular-nums w-6 text-right shrink-0">
-                    {i + 1}
-                  </span>
-                  <p className="flex-1 min-w-0 truncate font-medium text-foreground">
-                    {item.nama}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-8"
-                      onClick={() => openEdit(item)}
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={deleting === item.id}
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Table className="[&_th]:px-4 [&_th]:h-9 [&_td]:px-4 [&_td]:py-2.5">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10 text-center">No</TableHead>
+                  <TableHead>Nama Layanan</TableHead>
+                  <TableHead className="w-16 text-right">Urutan</TableHead>
+                  <TableHead className="w-20 text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item, i) => (
+                  <TableRow key={item.id} className="group">
+                    <TableCell className="text-center text-muted-foreground tabular-nums">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {item.nama}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {item.urutan}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => openEdit(item)}
+                          title="Edit"
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={deleting === item.id}
+                          onClick={() => handleDelete(item.id)}
+                          title="Hapus"
+                        >
+                          {deleting === item.id ? (
+                            <span className="size-3.5 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{edit ? 'Edit Layanan' : 'Tambah Layanan'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="gap-0 p-0 sm:max-w-md">
+          <SheetHeader className="border-b border-border p-6">
+            <SheetTitle>{edit ? 'Edit Layanan' : 'Tambah Layanan'}</SheetTitle>
+            <SheetDescription>
+              {edit
+                ? 'Perbarui detail layanan yang sudah ada.'
+                : 'Tambahkan layanan baru ke daftar.'}
+            </SheetDescription>
+          </SheetHeader>
+          <form
+            className="flex flex-col gap-5 p-6"
+            id="layanan-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSave()
+            }}
+          >
             <div className="space-y-2">
-              <Label htmlFor="nama">Nama layanan</Label>
+              <Label htmlFor="nama" className="text-sm font-medium">
+                Nama layanan
+              </Label>
               <Input
                 id="nama"
                 value={nama}
@@ -167,13 +222,15 @@ export default function LayananPage() {
                   setNama(e.target.value)
                   if (error) setError('')
                 }}
-                placeholder="Contoh: Penerbitan SK"
+                placeholder="Nama layanan"
                 autoFocus
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="urutan">Urutan</Label>
+              <Label htmlFor="urutan" className="text-sm font-medium">
+                Urutan
+              </Label>
               <Input
                 id="urutan"
                 type="number"
@@ -181,18 +238,27 @@ export default function LayananPage() {
                 value={urutan}
                 onChange={(e) => setUrutan(+e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                Urutan tampilan di form permohonan.
+              </p>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Batal
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Menyimpan…' : 'Simpan'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </form>
+          <SheetFooter className="mt-auto border-t border-border px-6 py-4">
+            <div className="flex w-full items-center justify-end gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                form="layanan-form"
+                disabled={saving}
+              >
+                {saving ? 'Menyimpan…' : 'Simpan'}
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

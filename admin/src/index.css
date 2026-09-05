@@ -1,79 +1,102 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #0a1628;
-  --foreground: #e8eef6;
-  --card: #0f1f38;
-  --card-foreground: #e8eef6;
-  --popover: #0f1f38;
-  --popover-foreground: #e8eef6;
-  --primary: #2196f3;
-  --primary-foreground: #ffffff;
-  --primary-dim: #1976d2;
-  --secondary: #0d47a1;
+  --background: #18181b;
+  --foreground: #ffffff;
+  --card: #27272a;
+  --card-foreground: #ffffff;
+  --popover: #27272a;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #18181b;
+  --primary-dim: #a1a1aa;
+  --secondary: #3f3f46;
   --secondary-foreground: #ffffff;
-  --muted: #1a2744;
-  --muted-foreground: #7a8ba8;
-  --accent: #2196f3;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #3f3f46;
   --accent-foreground: #ffffff;
-  --destructive: #FF453A;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --success: #32D74B;
-  --success-foreground: #121212;
-  --warning: #FFD60A;
-  --warning-foreground: #121212;
-  --border: #1a2744;
-  --input: #1a2744;
-  --ring: #2196f3;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --border: #3f3f46;
+  --input: #27272a;
+  --ring: #ffffff;
   /* sidebar — dark mode */
-  --sidebar-bg: #080f1e;
-  --sidebar-foreground: #c8d8ee;
-  --sidebar-primary: #2196f3;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(33, 150, 243, 0.12);
-  --sidebar-accent-foreground: #2196f3;
-  --sidebar-border: #12213a;
+  --sidebar-bg: #18181b;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #18181b;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #27272a;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   --radius: 0.75rem;
   --spacing: 0.25rem;
 }
 
 html.light {
-  --background: #e3f2fd;
-  --foreground: #0d1b2a;
+  --background: #ffffff;
+  --foreground: #18181b;
   --card: #ffffff;
-  --card-foreground: #0d1b2a;
+  --card-foreground: #18181b;
   --popover: #ffffff;
-  --popover-foreground: #0d1b2a;
-  --primary: #2196f3;
+  --popover-foreground: #18181b;
+  --primary: #27272a;
   --primary-foreground: #ffffff;
-  --primary-dim: #1976d2;
-  --secondary: #0d47a1;
+  --primary-dim: #3f3f46;
+  --secondary: #3f3f46;
   --secondary-foreground: #ffffff;
-  --muted: #e8eef6;
-  --muted-foreground: #5a6a7d;
-  --accent: #2196f3;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #3f3f46;
   --accent-foreground: #ffffff;
-  --destructive: #FF453A;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --success: #32D74B;
+  --success: #16a34a;
   --success-foreground: #ffffff;
-  --warning: #FFD60A;
+  --warning: #d97706;
   --warning-foreground: #ffffff;
-  --border: #c8d6e5;
-  --input: #c8d6e5;
-  --ring: #2196f3;
-  --sidebar-bg: #f0f5fc;
-  --sidebar-foreground: #000000;
-  --sidebar-primary: #2196f3;
+  --border: #e4e4e7;
+  --input: #f4f4f5;
+  --ring: #27272a;
+  --sidebar-bg: #fafafa;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #27272a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(33, 150, 243, 0.1);
-  --sidebar-accent-foreground: #2196f3;
-  --sidebar-border: #c8d6e5;
+  --sidebar-accent: rgba(39, 39, 42, 0.08);
+  --sidebar-accent-foreground: #27272a;
+  --sidebar-border: #e4e4e7;
+}
+
+/* Palet aksen — surface tetap mengikuti tema gelap/terang */
+html[data-palette="blue"] {
+  --primary: #3b82f5;
+  --primary-foreground: #ffffff;
+  --primary-dim: #60a5fa;
+  --secondary: #2563eb;
+  --sidebar-primary: #3b82f5;
+  --sidebar-primary-foreground: #ffffff;
+  --ring: #3b82f5;
+}
+
+html[data-palette="emerald"] {
+  --primary: #10b981;
+  --primary-foreground: #ffffff;
+  --primary-dim: #34d399;
+  --secondary: #059669;
+  --sidebar-primary: #10b981;
+  --sidebar-primary-foreground: #ffffff;
+  --ring: #10b981;
 }
 
 @theme inline {

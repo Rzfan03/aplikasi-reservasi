@@ -32,14 +32,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       console.error(`[api] no token for ${path}`)
       throw new UnauthorizedError('Tidak ada sesi')
     }
-    return fetch(`${API}${path}`, {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        ...init?.headers,
-      },
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+    try {
+      return await fetch(`${API}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...init?.headers,
+        },
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   let res: Response
@@ -75,6 +82,10 @@ export async function fetchStats(): Promise<StatsData> {
   return request<StatsData>('/api/requests/stats')
 }
 
+export async function fetchWeekly(): Promise<{ date: string; count: number }[]> {
+  return request<{ date: string; count: number }[]>('/api/requests/weekly')
+}
+
 export async function fetchRequestsPaged(opts?: {
   status?: Status
   dateFrom?: string
@@ -94,15 +105,19 @@ export async function fetchRequestsPaged(opts?: {
   return request(`/api/requests${qs ? `?${qs}` : ''}`)
 }
 
+export async function fetchRequest(id: string): Promise<RequestData> {
+  return request<RequestData>(`/api/requests/admin/${id}`)
+}
+
 export async function fetchRequests(status?: Status): Promise<RequestData[]> {
   const qs = status ? `?status=${status}` : ''
   return request<RequestData[]>(`/api/requests${qs}`)
 }
 
-export async function updateStatus(id: string, status: Status): Promise<RequestData> {
+export async function updateStatus(id: string, status: Status, rejectReason?: string): Promise<RequestData> {
   return request<RequestData>(`/api/requests/${id}/status`, {
     method: 'PUT',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, rejectReason }),
   })
 }
 

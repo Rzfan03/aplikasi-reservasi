@@ -75,10 +75,10 @@ export default function InstansiPage() {
             <div className="divide-y divide-border">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-4 px-6 py-4">
-                  <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
-                  <Skeleton className="h-4 flex-1" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
+                    <Skeleton className="h-10 w-10 rounded-md shrink-0" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-8 w-16 rounded-md" />
+                  </div>
               ))}
             </div>
           ) : items.length === 0 ? (
@@ -93,7 +93,7 @@ export default function InstansiPage() {
                   key={item.id}
                   className="flex items-center gap-4 px-6 py-4 hover:bg-muted transition-colors"
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                     <Building2 className="size-5" />
                   </div>
                   <div className="flex-1 min-w-0">

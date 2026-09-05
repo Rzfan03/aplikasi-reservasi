@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useId } from 'react'
 import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -21,7 +21,7 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-md text-xs">
+    <div className="rounded-md border border-border bg-card px-3 py-2 shadow-md text-xs">
       <p className="font-semibold text-foreground mb-0.5">{label}</p>
       <p className="text-muted-foreground">
         Permohonan:{' '}
@@ -32,7 +32,7 @@ function CustomTooltip({
 }
 
 export default function ActivityAreaChart({ data }: ActivityAreaChartProps) {
-  const gradientId = useMemo(() => `area-grad-${Math.random().toString(36).slice(2, 8)}`, [])
+  const gradientId = useId().replace(/:/g, '')
   const maxCount = Math.max(...data.map((d) => d.count), 1)
 
   return (
@@ -43,7 +43,6 @@ export default function ActivityAreaChart({ data }: ActivityAreaChartProps) {
             <CardTitle className="text-sm font-semibold text-foreground">Aktivitas 7 Hari</CardTitle>
             <p className="text-xs text-muted-foreground">Permohonan masuk per hari</p>
           </div>
-          <span className="text-[10px] font-medium text-muted-foreground/60 border border-border rounded px-1.5 py-0.5 uppercase tracking-wide">Contoh</span>
         </div>
       </CardHeader>
       <CardContent className="pt-0 pb-4">

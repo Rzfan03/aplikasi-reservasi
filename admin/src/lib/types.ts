@@ -13,6 +13,7 @@ export interface RequestData {
   status: Status
   statusToken: string
   adminEmail?: string | null
+  rejectReason?: string | null
   createdAt: string
   updatedAt: string
 }

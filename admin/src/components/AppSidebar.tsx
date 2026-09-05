@@ -12,6 +12,8 @@ import {
   User,
 } from 'lucide-react'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
+import BrandMark from '@/components/BrandMark'
+import { BRAND } from '@/lib/branding'
 import {
   Sidebar,
   SidebarContent,
@@ -80,13 +82,11 @@ export default function AppSidebar({ user, onSignOut }: Props) {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            R
-          </div>
+          <BrandMark />
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">Reservasi</span>
-              <span className="truncate text-[10px] text-sidebar-foreground/60 leading-tight">Admin Panel</span>
+              <span className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">{BRAND.nama}</span>
+              <span className="truncate text-[10px] text-sidebar-foreground/60 leading-tight">{BRAND.instansi}</span>
             </div>
           )}
         </div>
@@ -110,7 +110,7 @@ export default function AppSidebar({ user, onSignOut }: Props) {
                       <NavLink
                         to={item.url}
                           className={({ isActive }) =>
-                            `flex items-center gap-2.5 rounded-lg transition-colors ${
+                            `flex items-center gap-2.5 rounded-md transition-colors ${
                               isActive
                                 ? 'bg-primary/10 text-primary font-medium'
                                 : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
@@ -156,7 +156,7 @@ export default function AppSidebar({ user, onSignOut }: Props) {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-56 rounded-xl border-border bg-card"
+                className="w-56 rounded-md border-border bg-card"
                 side="right"
                 align="start"
                 sideOffset={8}

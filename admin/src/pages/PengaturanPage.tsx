@@ -1,6 +1,6 @@
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { Monitor, Moon, Sun, Palette } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useSettings, FONT_SIZES, FONTS, type Theme } from '@/components/SettingsProvider'
+import { useSettings, FONT_SIZES, FONTS, type Theme, type ColorPalette } from '@/components/SettingsProvider'
 
 const THEMES: { value: Theme; label: string; icon: typeof Sun; desc: string }[] = [
   { value: 'dark', label: 'Gelap', icon: Moon, desc: 'Latar belakang gelap' },
@@ -8,8 +8,14 @@ const THEMES: { value: Theme; label: string; icon: typeof Sun; desc: string }[] 
   { value: 'system', label: 'Otomatis', icon: Monitor, desc: 'Ikuti sistem' },
 ]
 
+const PALETTES: { value: ColorPalette; label: string; desc: string; bg: string }[] = [
+  { value: 'zinc', label: 'Zinc', desc: 'Zinc-800 + white', bg: 'bg-zinc-800' },
+  { value: 'blue', label: 'Blue', desc: 'Blue-500 + white', bg: 'bg-blue-500' },
+  { value: 'emerald', label: 'Emerald', desc: 'Emerald-500 + white', bg: 'bg-emerald-500' },
+]
+
 export default function PengaturanPage() {
-  const { fontSize, setFontSize, font, setFont, theme, setTheme } = useSettings()
+  const { fontSize, setFontSize, font, setFont, theme, setTheme, colorPalette, setColorPalette } = useSettings()
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -27,13 +33,13 @@ export default function PengaturanPage() {
                 <button
                   key={t.value}
                   onClick={() => setTheme(t.value)}
-                  className={`flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all text-left ${
+                  className={`flex flex-col items-center gap-2.5 rounded-md border-2 p-4 transition-all text-left ${
                     isActive
                       ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
                       : 'border-border hover:border-primary/40 hover:bg-muted/40 bg-transparent'
                   }`}
                 >
-                  <div className={`flex size-9 items-center justify-center rounded-xl ${
+                  <div className={`flex size-9 items-center justify-center rounded-md ${
                     isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
                   }`}>
                     <t.icon className="size-4" />
@@ -66,7 +72,7 @@ export default function PengaturanPage() {
                 <button
                   key={f.name}
                   onClick={() => setFont(f.name)}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                  className={`flex flex-col items-center gap-2 rounded-md border-2 p-4 transition-all ${
                     isActive
                       ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
                       : 'border-border hover:border-primary/40 hover:bg-muted/40 bg-transparent'
@@ -103,7 +109,7 @@ export default function PengaturanPage() {
                 <button
                   key={s.name}
                   onClick={() => setFontSize(s.value)}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                  className={`flex flex-col items-center gap-2 rounded-md border-2 p-3 transition-all ${
                     isActive
                       ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
                       : 'border-border hover:border-primary/40 hover:bg-muted/40 bg-transparent'
@@ -117,6 +123,44 @@ export default function PengaturanPage() {
                   </span>
                   <p className="text-xs font-semibold text-foreground">{s.label}</p>
                   <p className="text-[10px] text-muted-foreground">{s.value}</p>
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Palet Warna ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="size-4" />
+            Palet Warna
+          </CardTitle>
+          <CardDescription>Pilih warna aksen aplikasi</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            {PALETTES.map((p) => {
+              const isActive = colorPalette === p.value
+              return (
+                <button
+                  key={p.value}
+                  onClick={() => setColorPalette(p.value)}
+                  className={`flex flex-col items-center gap-2.5 rounded-md border-2 p-4 transition-all ${
+                    isActive
+                      ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/40 bg-transparent'
+                  }`}
+                >
+                  <div className={`flex size-9 items-center justify-center rounded-md ${p.bg}`} />
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground leading-snug">{p.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{p.desc}</p>
+                  </div>
+                  {isActive && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Aktif</span>
+                  )}
                 </button>
               )
             })}

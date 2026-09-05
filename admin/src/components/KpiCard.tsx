@@ -14,10 +14,10 @@ interface KpiCardProps {
 
 export default function KpiCard({ title, value, unit, icon, color, trend, trendUp }: KpiCardProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
+    <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-muted-foreground">{title}</span>
-        <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', color)}>
+        <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-md', color)}>
           {icon}
         </div>
       </div>

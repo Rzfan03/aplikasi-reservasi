@@ -13,19 +13,22 @@ export const FONTS = [
 ]
 
 export type Theme = 'dark' | 'light' | 'system'
+export type ColorPalette = 'zinc' | 'blue' | 'emerald'
 
 export interface Settings {
   fontSize: string
   font: string
   theme: Theme
+  colorPalette: ColorPalette
 }
 
-const DEFAULT: Settings = { fontSize: '14px', font: 'inter', theme: 'dark' }
+const DEFAULT: Settings = { fontSize: '14px', font: 'inter', theme: 'dark', colorPalette: 'zinc' }
 
 interface SettingsCtx extends Settings {
   setFontSize: (s: string) => void
   setFont: (f: string) => void
   setTheme: (t: Theme) => void
+  setColorPalette: (p: ColorPalette) => void
 }
 
 const SettingsContext = createContext<SettingsCtx>({
@@ -33,6 +36,7 @@ const SettingsContext = createContext<SettingsCtx>({
   setFontSize: () => {},
   setFont: () => {},
   setTheme: () => {},
+  setColorPalette: () => {},
 })
 
 function getStored(): Settings {
@@ -44,6 +48,7 @@ function getStored(): Settings {
         fontSize: parsed.fontSize || DEFAULT.fontSize,
         font: parsed.font || DEFAULT.font,
         theme: parsed.theme || DEFAULT.theme,
+        colorPalette: parsed.colorPalette || DEFAULT.colorPalette,
       }
     }
   } catch {}
@@ -57,10 +62,9 @@ function resolveTheme(theme: Theme): 'dark' | 'light' {
   return theme
 }
 
-function applyTheme(s: Settings) {
+function applySettings(s: Settings) {
   const r = document.documentElement.style
 
-  // Set root font-size so all rem-based Tailwind classes scale with it
   r.setProperty('font-size', s.fontSize)
   r.setProperty('--font-size-base', s.fontSize)
 
@@ -73,17 +77,19 @@ function applyTheme(s: Settings) {
   const resolved = resolveTheme(s.theme)
   document.documentElement.classList.remove('dark', 'light')
   document.documentElement.classList.add(resolved)
+
+  document.documentElement.dataset.palette = s.colorPalette
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(getStored)
 
-  useLayoutEffect(() => { applyTheme(settings) }, [settings])
+  useLayoutEffect(() => { applySettings(settings) }, [settings])
 
   useLayoutEffect(() => {
     if (settings.theme !== 'system') return
     const mq = window.matchMedia('(prefers-color-scheme: light)')
-    const handler = () => applyTheme(settings)
+    const handler = () => applySettings(settings)
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [settings.theme])
@@ -112,9 +118,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const setColorPalette = useCallback((colorPalette: ColorPalette) => {
+    setSettings((s) => {
+      const next = { ...s, colorPalette }
+      localStorage.setItem('app-settings', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ ...settings, setFontSize, setFont, setTheme }),
-    [settings, setFontSize, setFont, setTheme],
+    () => ({ ...settings, setFontSize, setFont, setTheme, setColorPalette }),
+    [settings, setFontSize, setFont, setTheme, setColorPalette],
   )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>

@@ -8,10 +8,17 @@ export function useSession() {
   useEffect(() => {
     let active = true
     console.log('[useSession] fetching session...')
+    const timeout = setTimeout(() => {
+      if (active) {
+        console.error('[useSession] session timeout')
+        setLoading(false)
+      }
+    }, 8000)
     authClient
       .getSession()
       .then((result) => {
         if (!active) return
+        clearTimeout(timeout)
         console.log('[useSession] session result:', result)
         if (result.data?.user) {
           const u = result.data.user as SessionUser
@@ -22,9 +29,10 @@ export function useSession() {
         }
       })
       .catch((err) => {
+        if (active) clearTimeout(timeout)
         console.error('[useSession] getSession error:', err)
       })
-      .finally(() => active && setLoading(false))
+      .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
 

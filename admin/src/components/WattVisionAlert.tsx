@@ -36,7 +36,7 @@ export default function WattVisionAlert({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-xl p-4',
+        'flex items-start gap-3 rounded-md p-4',
         v.bg, v.border,
       )}
     >

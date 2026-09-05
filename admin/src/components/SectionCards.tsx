@@ -11,7 +11,7 @@ export default function SectionCards({ loading, children }: SectionCardsProps) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-2xl border border-border bg-card p-5">
+          <div key={i} className="rounded-md border border-border bg-card p-5">
             <Skeleton className="h-4 w-24 mb-4" />
             <Skeleton className="h-8 w-16" />
           </div>

@@ -23,7 +23,7 @@ import StatusChart from '@/components/StatusChart'
 import ActivityAreaChart from '@/components/ActivityAreaChart'
 import WattVisionAlert from '@/components/WattVisionAlert'
 import { Button } from '@/components/ui/button'
-import { fetchStats, fetchRequestsPaged, getToken, sseUrl } from '@/lib/api'
+import { fetchStats, fetchRequestsPaged, fetchWeekly, getToken, sseUrl } from '@/lib/api'
 import { type RequestData, type StatsData } from '@/lib/types'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
 
@@ -93,20 +93,26 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [recent, setRecent] = useState<RequestData[]>([])
   const [pendingList, setPendingList] = useState<RequestData[]>([])
+  const [weeklyData, setWeeklyData] = useState<{ date: string; count: number }[]>([
+    { date: 'Min', count: 0 }, { date: 'Sen', count: 0 }, { date: 'Sel', count: 0 },
+    { date: 'Rab', count: 0 }, { date: 'Kam', count: 0 }, { date: 'Jum', count: 0 }, { date: 'Sab', count: 0 },
+  ])
   const [loading, setLoading] = useState(true)
   const addNotif = useNotificationStore((s) => s.add)
   const navigate = useNavigate()
 
   const loadStats = useCallback(async () => {
     try {
-      const [s, p, pend] = await Promise.all([
+      const [s, p, pend, w] = await Promise.all([
         fetchStats(),
         fetchRequestsPaged({ limit: 5, page: 1 }),
         fetchRequestsPaged({ status: 'PENDING', limit: 4, page: 1 }),
+        fetchWeekly(),
       ])
       setStats(s)
       setRecent(p.data)
       setPendingList(pend.data)
+      setWeeklyData(w)
     } catch {
     } finally {
       setLoading(false)
@@ -180,20 +186,10 @@ export default function DashboardPage() {
     }
   }, [loadStats, addNotif])
 
-  const WEEKLY_DATA = [
-    { date: 'Sen', count: 8 },
-    { date: 'Sel', count: 12 },
-    { date: 'Rab', count: 6 },
-    { date: 'Kam', count: 15 },
-    { date: 'Jum', count: 10 },
-    { date: 'Sab', count: 3 },
-    { date: 'Min', count: 1 },
-  ]
-
-  const weeklyTotal = WEEKLY_DATA.reduce((s, d) => s + d.count, 0)
-  const weeklyAvg = Math.round(weeklyTotal / WEEKLY_DATA.length)
-  const busiestDay = WEEKLY_DATA.reduce((best, d) => (d.count > best.count ? d : best), WEEKLY_DATA[0])
-  const activeDays = WEEKLY_DATA.filter((d) => d.count > 0).length
+  const weeklyTotal = weeklyData.reduce((s, d) => s + d.count, 0)
+  const weeklyAvg = weeklyData.length ? Math.round(weeklyTotal / weeklyData.length) : 0
+  const busiestDay = weeklyData.length ? weeklyData.reduce((best, d) => (d.count > best.count ? d : best), weeklyData[0]) : { date: '-', count: 0 }
+  const activeDays = weeklyData.filter((d) => d.count > 0).length
 
   const WEEKLY_CARDS = [
     {
@@ -241,7 +237,7 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={() => { setLoading(true); loadStats() }}
-          className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
         >
           <RefreshCw className="size-3.5" />
           <span className="hidden sm:inline">Perbarui</span>
@@ -260,7 +256,7 @@ export default function DashboardPage() {
       {/* ── 4 Weekly Summary Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {WEEKLY_CARDS.map((c) => (
-          <div key={c.label} className="relative flex flex-col gap-2 rounded-xl border border-border bg-card p-5 overflow-hidden">
+          <div key={c.label} className="relative flex flex-col gap-2 rounded-md border border-border bg-card p-5 overflow-hidden">
             <span className="text-xs text-muted-foreground">{c.label}</span>
             <div className="flex items-center gap-3">
               <p className="text-3xl font-bold tabular-nums text-foreground leading-none">{c.value}</p>
@@ -293,13 +289,13 @@ export default function DashboardPage() {
         {/* Chart area — 8 kolom */}
         <div className="lg:col-span-8">
           {loading ? (
-            <div className="rounded-2xl border border-border bg-card p-6 h-full">
-              <div className="h-4 w-40 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-3 w-56 bg-muted animate-pulse rounded mb-6" />
-              <div className="h-[220px] w-full bg-muted animate-pulse rounded" />
+            <div className="rounded-md border border-border bg-card p-6 h-full">
+              <div className="h-4 w-40 bg-primary/15 animate-pulse rounded mb-2" />
+              <div className="h-3 w-56 bg-primary/15 animate-pulse rounded mb-6" />
+              <div className="h-[220px] w-full bg-primary/15 animate-pulse rounded" />
             </div>
           ) : (
-            <ActivityAreaChart data={WEEKLY_DATA} />
+            <ActivityAreaChart data={weeklyData} />
           )}
         </div>
 
@@ -308,16 +304,16 @@ export default function DashboardPage() {
 
           {/* Status donut */}
           {loading ? (
-            <div className="rounded-2xl border border-border bg-card p-6">
-              <div className="h-4 w-32 bg-muted animate-pulse rounded mb-4" />
+            <div className="rounded-md border border-border bg-card p-6">
+              <div className="h-4 w-32 bg-primary/15 animate-pulse rounded mb-4" />
               <div className="flex justify-center mb-4">
-                <div className="size-28 rounded-full bg-muted animate-pulse" />
+                <div className="size-28 rounded-full bg-primary/15 animate-pulse" />
               </div>
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="space-y-1.5">
-                    <div className="h-3 w-full bg-muted animate-pulse rounded" />
-                    <div className="h-2 w-full bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-full bg-primary/15 animate-pulse rounded" />
+                    <div className="h-2 w-full bg-primary/15 animate-pulse rounded" />
                   </div>
                 ))}
               </div>
@@ -331,7 +327,7 @@ export default function DashboardPage() {
           ) : null}
 
           {/* Perlu Tindakan */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden flex-1">
+          <div className="rounded-md border border-border bg-card overflow-hidden flex-1">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <AlertCircle className="size-3.5 text-warning shrink-0" />
@@ -350,10 +346,10 @@ export default function DashboardPage() {
                 <div className="space-y-1 p-2">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-3 px-2 py-2.5">
-                      <div className="size-8 rounded-lg bg-muted animate-pulse shrink-0" />
+                      <div className="size-8 rounded-md bg-primary/15 animate-pulse shrink-0" />
                       <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-28 bg-muted animate-pulse rounded" />
-                        <div className="h-2.5 w-20 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-28 bg-primary/15 animate-pulse rounded" />
+                        <div className="h-2.5 w-20 bg-primary/15 animate-pulse rounded" />
                       </div>
                     </div>
                   ))}
@@ -372,7 +368,7 @@ export default function DashboardPage() {
                       className="flex items-center gap-3 px-3 py-3 hover:bg-muted/50 transition-colors cursor-pointer group"
                       onClick={() => navigate(`/permohonan/${r.id}`)}
                     >
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning">
                         <Clock className="size-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -404,7 +400,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Recent Permohonan (full width) ── */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="rounded-md border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <FileText className="size-4 text-muted-foreground" />
@@ -423,12 +419,12 @@ export default function DashboardPage() {
             <div className="space-y-1 px-2">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center gap-3 px-2 py-3">
-                  <div className="size-9 rounded-xl bg-muted animate-pulse shrink-0" />
+                  <div className="size-9 rounded-md bg-primary/15 animate-pulse shrink-0" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-3.5 w-36 bg-muted animate-pulse rounded" />
-                    <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+                    <div className="h-3.5 w-36 bg-primary/15 animate-pulse rounded" />
+                    <div className="h-3 w-24 bg-primary/15 animate-pulse rounded" />
                   </div>
-                  <div className="h-5 w-16 bg-muted animate-pulse rounded-full" />
+                  <div className="h-5 w-16 bg-primary/15 animate-pulse rounded-full" />
                 </div>
               ))}
             </div>
@@ -446,7 +442,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors cursor-pointer group"
                   onClick={() => navigate(`/permohonan/${r.id}`)}
                 >
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                     <FileText className="size-4" />
                   </div>
                   <div className="flex-1 min-w-0">

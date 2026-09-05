@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSessionCtx } from '@/lib/SessionProvider'
+import BrandMark from '@/components/BrandMark'
+import { BRAND } from '@/lib/branding'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -28,11 +30,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-background">
       <div
         className="hidden lg:flex lg:w-1/2 items-center justify-center relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0d47a1, #2196f3)' }}
+        style={{ background: 'linear-gradient(135deg, #18181b, #3f3f46)' }}
       >
         <div className="z-10 text-center text-white px-12">
-          <h1 className="text-4xl font-bold mb-4">Sistem Reservasi</h1>
-          <p className="text-lg opacity-90">Manajemen permohonan layanan instansi</p>
+          <div className="mb-5 flex justify-center">
+            <BrandMark className="size-16 rounded-md text-2xl bg-white/15" imgClassName="size-16 rounded-md" />
+          </div>
+          <h1 className="text-4xl font-bold mb-2">{BRAND.nama}</h1>
+          <p className="text-lg opacity-90">{BRAND.instansi}</p>
         </div>
       </div>
 
@@ -45,7 +50,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-xl bg-destructive/10 border-l-4 border-destructive p-3 text-sm text-destructive">
+              <div className="rounded-md bg-destructive/10 border-l-4 border-destructive p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -55,7 +60,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors"
+                className="mt-1 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors"
                 required
               />
             </div>
@@ -65,14 +70,14 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors"
+                className="mt-1 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dim disabled:opacity-50 transition-all"
+              className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dim disabled:opacity-50 transition-all"
             >
               {loading ? 'Masuk…' : 'Masuk'}
             </button>

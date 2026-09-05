@@ -20,7 +20,10 @@ type SessionResult = {
 
 export async function getSessionAccessToken(): Promise<string | null> {
   try {
-    const result = (await authClient.getSession()) as unknown as SessionResult
+    const result = (await Promise.race([
+      authClient.getSession(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Session timeout')), 8000)),
+    ])) as unknown as SessionResult
     const session = result?.data?.session
     if (!session) {
       console.warn('[auth] no session in result')

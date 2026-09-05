@@ -3,8 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileText, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequestsPaged, updateStatus } from '@/lib/api'
+import { fetchRequest, updateStatus } from '@/lib/api'
 import type { RequestData, Status } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -27,14 +35,16 @@ export default function PermohonanDetailPage() {
   const navigate = useNavigate()
   const [item, setItem] = useState<RequestData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
     setLoading(true)
     try {
-      const res = await fetchRequestsPaged({ limit: 100 })
-      const found = res.data.find((r) => r.id === id)
-      if (found) setItem(found)
+      const found = await fetchRequest(id)
+      setItem(found)
     } catch {} finally { setLoading(false) }
   }, [id])
 
@@ -42,8 +52,27 @@ export default function PermohonanDetailPage() {
 
   async function handleStatus(status: Status) {
     if (!id) return
+    if (status === 'REJECTED') {
+      setRejectReason('')
+      setRejectOpen(true)
+      return
+    }
     await updateStatus(id, status)
     load()
+  }
+
+  async function handleReject() {
+    if (!id || !rejectReason.trim()) return
+    setSaving(true)
+    try {
+      await updateStatus(id, 'REJECTED', rejectReason.trim())
+      setRejectOpen(false)
+      load()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Gagal menyimpan')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -96,6 +125,12 @@ export default function PermohonanDetailPage() {
           <DetailRow label="Tanggal" value={new Date(item.tanggal).toLocaleDateString('id-ID')} />
           <DetailRow label="Deskripsi" value={item.deskripsi || '-'} />
           {item.adminEmail && <DetailRow label="Diperbarui oleh" value={item.adminEmail} />}
+          {item.status === 'REJECTED' && item.rejectReason && (
+            <div className="mt-2 rounded-md border-l-4 border-destructive bg-destructive/10 p-3">
+              <p className="text-sm font-semibold text-destructive">Alasan penolakan</p>
+              <p className="mt-1 text-sm text-foreground">{item.rejectReason}</p>
+            </div>
+          )}
           <div className="pt-2">
             <a
               href={attach(item)}
@@ -120,6 +155,31 @@ export default function PermohonanDetailPage() {
           </Button>
         </div>
       )}
+
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tolak Permohonan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">Alasan penolakan <span className="text-destructive">*</span></Label>
+            <textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+              placeholder="Tuliskan alasan yang akan dilihat pemohon"
+              className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-[3px] focus:ring-primary/30 outline-none transition-colors resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectOpen(false)}>Batal</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={saving || !rejectReason.trim()}>
+              {saving ? 'Menyimpan…' : 'Tolak Permohonan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
