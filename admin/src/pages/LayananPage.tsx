@@ -184,24 +184,24 @@ export default function LayananPage() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="size-7 text-muted-foreground hover:text-foreground"
+                          className="size-9 text-muted-foreground hover:text-foreground"
                           onClick={() => openEdit(item)}
                           title="Edit"
                         >
-                          <Pencil className="size-3.5" />
+                          <Pencil className="size-4" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="size-9 text-destructive hover:text-destructive hover:bg-destructive/10"
                           disabled={deleting === item.id}
                           onClick={() => handleDelete(item.id)}
                           title="Hapus"
                         >
                           {deleting === item.id ? (
-                            <span className="size-3.5 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                            <span className="size-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
                           ) : (
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-4" />
                           )}
                         </Button>
                       </div>

@@ -9,7 +9,7 @@ function formatWaktu(iso: string) {
 }
 
 export default function NotifPage() {
-  const { items, markAllRead, clear } = useNotificationStore()
+  const { items, markAllRead, markRead, remove, clear } = useNotificationStore()
   const navigate = useNavigate()
 
   return (
@@ -41,18 +41,31 @@ export default function NotifPage() {
           {items.map((n) => (
             <Card
               key={n.id}
-              className="cursor-pointer hover:bg-muted transition-colors"
+              className={`cursor-pointer hover:bg-muted transition-colors relative ${n.read ? '' : 'border-primary/40 bg-primary/[0.03]'}`}
               onClick={() => {
+                markRead(n.id)
                 if (n.requestId) navigate(`/permohonan/${n.requestId}`)
               }}
             >
               <CardContent className="flex items-start gap-3 p-4">
-                <Bell className="mt-0.5 size-4 shrink-0 text-primary" />
+                <div className="relative mt-0.5 size-4 shrink-0">
+                  <Bell className="size-4 text-primary" />
+                  {!n.read && <span className="absolute -right-1 -top-1 size-2 rounded-full bg-[#FF453A]" />}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{n.title}</p>
+                  <p className={`text-sm ${n.read ? 'text-foreground' : 'font-semibold text-foreground'}`}>{n.title}</p>
                   <p className="text-sm text-muted-foreground">{n.message}</p>
                   <p className="text-xs text-muted-foreground mt-1">{formatWaktu(n.createdAt)}</p>
                 </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => { e.stopPropagation(); remove(n.id) }}
+                  title="Hapus"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
               </CardContent>
             </Card>
           ))}

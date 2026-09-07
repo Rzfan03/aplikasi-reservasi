@@ -26,6 +26,15 @@ import { Button } from '@/components/ui/button'
 import { fetchStats, fetchRequestsPaged, fetchWeekly, getToken, sseUrl } from '@/lib/api'
 import { type RequestData, type StatsData } from '@/lib/types'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
+import { useSessionCtx } from '@/lib/SessionProvider'
+
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 11) return 'Selamat pagi'
+  if (h < 15) return 'Selamat siang'
+  if (h < 18) return 'Selamat sore'
+  return 'Selamat malam'
+}
 
 function formatTanggal(value: string) {
   return new Date(value).toLocaleDateString('id-ID', {
@@ -100,6 +109,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const addNotif = useNotificationStore((s) => s.add)
   const navigate = useNavigate()
+  const { user } = useSessionCtx()
+
+  const initials = user?.name
+    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? '?'
+  const firstName = user?.name?.split(' ')[0] ?? 'Admin'
 
   const loadStats = useCallback(async () => {
     try {
@@ -231,9 +246,14 @@ export default function DashboardPage() {
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{formatDateHeader()}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary text-sm ring-1 ring-border">
+            {initials}
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">{greeting()}, {firstName}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{formatDateHeader()}</p>
+          </div>
         </div>
         <button
           onClick={() => { setLoading(true); loadStats() }}

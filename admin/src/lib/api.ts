@@ -132,6 +132,13 @@ export async function deleteRequest(id: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(`/api/requests/${id}`, { method: 'DELETE' })
 }
 
+export async function bulkDeleteRequests(ids: string[]): Promise<{ count: number }> {
+  return request<{ count: number }>('/api/requests/bulk', {
+    method: 'DELETE',
+    body: JSON.stringify({ ids }),
+  })
+}
+
 export async function fetchLayanan(): Promise<LayananData[]> {
   return request<LayananData[]>('/api/layanan')
 }

@@ -158,6 +158,22 @@ requestsRouter.put('/bulk/status', requireAdmin, async (req, res) => {
   res.json({ count: updated.count })
 })
 
+// Admin: bulk delete
+requestsRouter.delete('/bulk', requireAdmin, async (req, res) => {
+  const { ids } = req.body
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: 'ids harus diisi' }); return
+  }
+  const found = await prisma.request.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, pdfFile: true },
+  })
+  await prisma.request.deleteMany({ where: { id: { in: ids } } })
+  await Promise.allSettled(found.map((r) => unlink(path.join(uploadsDir, r.pdfFile))))
+  broadcast({ type: 'bulk_request_deleted', count: found.length })
+  res.json({ count: found.length })
+})
+
 // Admin: delete
 requestsRouter.delete('/:id', requireAdmin, async (req, res) => {
   const request = await prisma.request.findUnique({ where: { id: req.params.id } })

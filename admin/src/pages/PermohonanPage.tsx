@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequestsPaged, bulkUpdateStatus, deleteRequest } from '@/lib/api'
+import { fetchRequestsPaged, bulkUpdateStatus, bulkDeleteRequests, deleteRequest } from '@/lib/api'
 import { confirmDanger, toastSuccess } from '@/lib/swal'
 import { type RequestData, type Status, STATUS_LABEL } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -111,6 +111,22 @@ export default function PermohonanPage() {
       setSelectedIds(new Set())
       await load()
       toastSuccess(`${count} permohonan ditolak`)
+    } catch {} finally {
+      setBulkLoading(false)
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (!selectedIds.size) return
+    const count = selectedIds.size
+    const res = await confirmDanger('Hapus permohonan terpilih?', `<b>${count}</b> permohonan akan dihapus permanen.`)
+    if (!res.isConfirmed) return
+    setBulkLoading(true)
+    try {
+      await bulkDeleteRequests([...selectedIds])
+      setSelectedIds(new Set())
+      await load()
+      toastSuccess(`${count} permohonan dihapus`)
     } catch {} finally {
       setBulkLoading(false)
     }
@@ -251,6 +267,9 @@ export default function PermohonanPage() {
           <Button variant="destructive" size="sm" onClick={handleBulkReject} disabled={bulkLoading}>
             <XCircle className="mr-1.5 size-4" /> Tolak Semua
           </Button>
+          <Button variant="outline" size="sm" onClick={handleBulkDelete} disabled={bulkLoading} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+            <Trash2 className="mr-1.5 size-4" /> Hapus
+          </Button>
         </div>
       )}
 
@@ -302,15 +321,15 @@ export default function PermohonanPage() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="size-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="size-9 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     disabled={deleting === r.id}
                     onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.nama) }}
                     title="Hapus"
                   >
                     {deleting === r.id ? (
-                      <span className="size-3.5 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                      <span className="size-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
                     ) : (
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-4.5" />
                     )}
                   </Button>
                 </div>
