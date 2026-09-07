@@ -1,9 +1,7 @@
-const App = () => {
-  return (
-    <h1>
-      Daymnnnn
-    </h1>
-  )
+import LandingPage from "./pages/LandingPage";
+
+function App() {
+  return <LandingPage />;
 }
 
 export default App;
