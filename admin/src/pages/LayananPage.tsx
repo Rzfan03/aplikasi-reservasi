@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, LayoutGrid } from 'lucide-react'
+import { Plus, Pencil, Trash2, LayoutGrid, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,10 +22,12 @@ import {
 } from '@/components/ui/table'
 import { fetchLayanan, createLayanan, updateLayanan, deleteLayanan } from '@/lib/api'
 import type { LayananData } from '@/lib/types'
+import { confirmDanger, toastSuccess } from '@/lib/swal'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function LayananPage() {
   const [items, setItems] = useState<LayananData[]>([])
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [edit, setEdit] = useState<LayananData | null>(null)
@@ -84,14 +86,21 @@ export default function LayananPage() {
   }
 
   async function handleDelete(id: string) {
+    const res = await confirmDanger('Hapus layanan ini?')
+    if (!res.isConfirmed) return
     setDeleting(id)
     try {
       await deleteLayanan(id)
       load()
+      toastSuccess('Layanan dihapus')
     } catch {} finally {
       setDeleting(null)
     }
   }
+
+  const filtered = items.filter((i) =>
+    i.nama.toLowerCase().includes(search.trim().toLowerCase()),
+  )
 
   return (
     <div className="space-y-4">
@@ -103,6 +112,16 @@ export default function LayananPage() {
         <Button onClick={openAdd} className="shrink-0">
           <Plus className="mr-2 size-4" /> Tambah
         </Button>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <Input
+          placeholder="Cari layanan…"
+          className="pl-9"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <Card>
@@ -128,13 +147,15 @@ export default function LayananPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : items.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 text-muted-foreground">
               <LayoutGrid className="mb-3 size-8" />
-              <p className="text-sm">Belum ada layanan</p>
-              <Button onClick={openAdd} variant="outline" className="mt-4">
-                <Plus className="mr-2 size-4" /> Tambah Layanan
-              </Button>
+              <p className="text-sm">{items.length === 0 ? 'Belum ada layanan' : 'Tidak ada hasil untuk pencarian'}</p>
+              {items.length === 0 && (
+                <Button onClick={openAdd} variant="outline" className="mt-4">
+                  <Plus className="mr-2 size-4" /> Tambah Layanan
+                </Button>
+              )}
             </div>
           ) : (
             <Table className="[&_th]:px-4 [&_th]:h-9 [&_td]:px-4 [&_td]:py-2.5">
@@ -147,7 +168,7 @@ export default function LayananPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item, i) => (
+                {filtered.map((item, i) => (
                   <TableRow key={item.id} className="group">
                     <TableCell className="text-center text-muted-foreground tabular-nums">
                       {i + 1}

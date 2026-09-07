@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { fetchInstansi, createInstansi, updateInstansi, deleteInstansi } from '@/lib/api'
 import type { InstansiData } from '@/lib/types'
+import { confirmDanger, toastSuccess } from '@/lib/swal'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function InstansiPage() {
@@ -54,9 +55,11 @@ export default function InstansiPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Hapus instansi ini?')) return
+    const res = await confirmDanger('Hapus instansi ini?')
+    if (!res.isConfirmed) return
     await deleteInstansi(id)
     load()
+    toastSuccess('Instansi dihapus')
   }
 
   return (

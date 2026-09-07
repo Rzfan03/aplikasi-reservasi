@@ -140,6 +140,56 @@ html[data-palette="emerald"] {
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+.swal-theme {
+  font-family: var(--font-sans) !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+}
+.swal-title {
+  color: var(--card-foreground) !important;
+  font-size: 1.05rem !important;
+}
+.swal-html {
+  color: var(--muted-foreground) !important;
+  font-size: 0.875rem !important;
+}
+.swal-confirm,
+.swal-cancel {
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  line-height: 1 !important;
+  padding: 0.625rem 1rem !important;
+  border-radius: var(--radius-md) !important;
+  border-width: 1px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.375rem !important;
+}
+.swal-confirm {
+  color: var(--primary-foreground) !important;
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.swal-cancel {
+  color: var(--foreground) !important;
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+}
+.swal-confirm:focus-visible,
+.swal-cancel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.swal-toast {
+  border-radius: var(--radius) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

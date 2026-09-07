@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { unlink } from 'node:fs/promises'
+import path from 'node:path'
 import { Router } from 'express'
 import { prisma } from '../db.js'
-import { uploadPdf } from '../upload.js'
+import { uploadPdf, uploadsDir } from '../upload.js'
 import { requireAdmin } from '../middleware/requireAdmin.js'
 import { broadcast } from '../sse.js'
 
@@ -154,6 +156,18 @@ requestsRouter.put('/bulk/status', requireAdmin, async (req, res) => {
   })
   broadcast({ type: 'bulk_status_changed', status, count: updated.count })
   res.json({ count: updated.count })
+})
+
+// Admin: delete
+requestsRouter.delete('/:id', requireAdmin, async (req, res) => {
+  const request = await prisma.request.findUnique({ where: { id: req.params.id } })
+  if (!request) { res.status(404).json({ error: 'Not found' }); return }
+  await prisma.request.delete({ where: { id: request.id } })
+  try {
+    await unlink(path.join(uploadsDir, request.pdfFile))
+  } catch {}
+  broadcast({ type: 'request_deleted', id: request.id })
+  res.json({ ok: true })
 })
 
 // User check status by token (must be last)

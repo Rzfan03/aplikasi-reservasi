@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Search, ClipboardList, Download, CheckCircle2, XCircle } from 'lucide-react'
+import { FileText, Search, ClipboardList, Download, Check, Minus, CheckCircle2, XCircle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequestsPaged, bulkUpdateStatus } from '@/lib/api'
+import { fetchRequestsPaged, bulkUpdateStatus, deleteRequest } from '@/lib/api'
+import { confirmDanger, toastSuccess } from '@/lib/swal'
 import { type RequestData, type Status, STATUS_LABEL } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -41,6 +42,7 @@ export default function PermohonanPage() {
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const navigate = useNavigate()
   const LIMIT = 10
 
@@ -83,11 +85,13 @@ export default function PermohonanPage() {
 
   async function handleBulkApprove() {
     if (!selectedIds.size) return
+    const count = selectedIds.size
     setBulkLoading(true)
     try {
       await bulkUpdateStatus([...selectedIds], 'APPROVED')
       setSelectedIds(new Set())
-      load()
+      await load()
+      toastSuccess(`${count} permohonan disetujui`)
     } catch {} finally {
       setBulkLoading(false)
     }
@@ -95,18 +99,44 @@ export default function PermohonanPage() {
 
   async function handleBulkReject() {
     if (!selectedIds.size) return
-    if (!window.confirm('Tolak semua permohonan yang dipilih?')) return
+    const count = selectedIds.size
+    const res = await confirmDanger(
+      'Tolak permohonan terpilih?',
+      `<b>${count}</b> permohonan akan ditolak.`,
+    )
+    if (!res.isConfirmed) return
     setBulkLoading(true)
     try {
       await bulkUpdateStatus([...selectedIds], 'REJECTED', 'Ditolak admin')
       setSelectedIds(new Set())
-      load()
+      await load()
+      toastSuccess(`${count} permohonan ditolak`)
     } catch {} finally {
       setBulkLoading(false)
     }
   }
 
+  async function handleDelete(id: string, nama: string) {
+    const res = await confirmDanger('Hapus permohonan ini?', `<b>${nama}</b> akan dihapus permanen.`)
+    if (!res.isConfirmed) return
+    setDeleting(id)
+    try {
+      await deleteRequest(id)
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      await load()
+      toastSuccess('Permohonan dihapus')
+    } catch {} finally {
+      setDeleting(null)
+    }
+  }
+
   const totalPages = Math.ceil(total / LIMIT)
+  const allSelected = data.length > 0 && selectedIds.size === data.length
+  const someSelected = selectedIds.size > 0 && !allSelected
 
   async function handleExport() {
     setExporting(true)
@@ -149,15 +179,6 @@ export default function PermohonanPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleToggleAll}
-          className="shrink-0"
-          title="Pilih Semua"
-        >
-          <CheckCircle2 className="size-4" />
-        </Button>
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
@@ -201,6 +222,21 @@ export default function PermohonanPage() {
             <SelectItem value="REJECTED">Ditolak</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggleAll}
+          disabled={data.length === 0}
+          className="shrink-0"
+          title={allSelected ? 'Batalkan pilihan semua' : 'Pilih Semua'}
+        >
+          <span
+            className={`flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${someSelected || allSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'}`}
+          >
+            {allSelected ? <Check className="size-3.5" /> : someSelected ? <Minus className="size-3.5" /> : null}
+          </span>
+          <span className="ml-1.5">{allSelected ? 'Urungkan' : 'Pilih Semua'}</span>
+        </Button>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
           <Download className="mr-2 size-4" /> {exporting ? 'Menyiapkan…' : 'Export CSV'}
         </Button>
@@ -223,13 +259,13 @@ export default function PermohonanPage() {
           {loading ? (
             <div className="divide-y divide-border">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center gap-4 px-6 py-4">
-                  <Skeleton className="h-10 w-10 rounded-md shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-48" />
+                <div key={i} className="flex items-center gap-3 px-4 py-3">
+                  <Skeleton className="h-8 w-8 rounded-md shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-32" />
+                    <Skeleton className="h-3 w-44" />
                   </div>
-                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
                 </div>
               ))}
             </div>
@@ -240,10 +276,10 @@ export default function PermohonanPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-               {data.map((r) => (
+              {data.map((r) => (
                 <div
                   key={r.id}
-                  className={`flex items-center gap-4 px-6 py-4 hover:bg-muted transition-colors cursor-pointer ${selectedIds.has(r.id) ? 'bg-muted/50' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors cursor-pointer ${selectedIds.has(r.id) ? 'bg-muted/40' : ''}`}
                   onClick={() => navigate(`/permohonan/${r.id}`)}
                 >
                   <input
@@ -251,23 +287,32 @@ export default function PermohonanPage() {
                     checked={selectedIds.has(r.id)}
                     onChange={() => handleToggle(r.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-4 w-4 shrink-0 cursor-pointer accent-primary"
+                    className="size-4 shrink-0 cursor-pointer accent-primary"
                   />
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <FileText className="size-5" />
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <FileText className="size-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-foreground">{r.nama}</p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="truncate text-sm font-medium text-foreground">{r.nama}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {r.instansi} · {r.layanan} · {formatTanggal(r.tanggal)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={r.status} />
-                    <Button size="sm" variant="ghost" className="shrink-0" onClick={(e) => { e.stopPropagation(); navigate(`/permohonan/${r.id}`) }}>
-                      <FileText className="size-4" />
-                    </Button>
-                  </div>
+                  <StatusBadge status={r.status} />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    disabled={deleting === r.id}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.nama) }}
+                    title="Hapus"
+                  >
+                    {deleting === r.id ? (
+                      <span className="size-3.5 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                    ) : (
+                      <Trash2 className="size-4" />
+                    )}
+                  </Button>
                 </div>
               ))}
             </div>
