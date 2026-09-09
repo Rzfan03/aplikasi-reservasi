@@ -57,4 +57,15 @@
   body {
     @apply bg-background font-sans text-foreground;
   }
+  input,
+  select,
+  textarea {
+    @apply rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground
+           placeholder:text-muted-foreground outline-none transition-colors;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply border-primary ring-[3px] ring-primary/30;
+  }
 }

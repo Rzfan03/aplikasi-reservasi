@@ -1,25 +1,5 @@
 import { useState } from "react";
-
-const defaultLayanan = [
-  {
-    title: "Ruang Rapat",
-    desc: "Pinjam ruang rapat untuk kegiatan instansi, lengkap dengan jadwal yang bisa dicek langsung.",
-    detail: "Kapasitas 10-60 orang, proyektor & sound system tersedia",
-    icon: "room",
-  },
-  {
-    title: "Peminjaman Alat",
-    desc: "Ajukan peminjaman proyektor, sound system, atau perangkat pendukung acara lainnya.",
-    detail: "Pengembalian maks. 1x24 jam setelah kegiatan selesai",
-    icon: "tool",
-  },
-  {
-    title: "Bantuan Teknis",
-    desc: "Minta pendampingan tim Kominfo untuk dokumentasi, jaringan, atau kebutuhan IT acara.",
-    detail: "Jadwalkan minimal 2 hari kerja sebelum kegiatan",
-    icon: "support",
-  },
-];
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   {
@@ -39,60 +19,9 @@ const steps = [
   },
 ];
 
-function Icon({ name, className }) {
-  const common = {
-    className,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.5,
-  };
-  if (name === "room") {
-    return (
-      <svg {...common}>
-        <rect x="3" y="5" width="18" height="14" rx="1" />
-        <path d="M3 10h18" />
-        <path d="M8 14h3" />
-      </svg>
-    );
-  }
-  if (name === "tool") {
-    return (
-      <svg {...common}>
-        <path d="M14.5 3.5 20.5 9.5" />
-        <path d="M17 2 22 7l-2.5 2.5L14.5 4.5z" />
-        <path d="M3 21l6.5-6.5" />
-        <path d="M8 12.5 3 17.5" />
-        <path d="M11.5 6 6 11.5 12.5 18 18 12.5z" />
-      </svg>
-    );
-  }
-  return (
-    <svg {...common}>
-      <circle cx="12" cy="8" r="3.2" />
-      <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
-      <path d="M4 8h1.6M18.4 8H20M12 3v1.4M12 12.6V14" />
-    </svg>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-card p-7 flex flex-col animate-pulse">
-      <div className="w-7 h-7 rounded-md bg-muted mb-5" />
-      <div className="h-4 w-28 bg-muted rounded mb-2" />
-      <div className="h-3 w-full bg-muted rounded mb-1" />
-      <div className="h-3 w-3/4 bg-muted rounded mb-4" />
-      <div className="h-3 w-1/2 bg-primary/10 rounded mt-auto" />
-    </div>
-  );
-}
-
-export default function LandingPage({ onAjukan, layanan = defaultLayanan, layananLoading = false }) {
+export default function LandingPage() {
   const [navOpen, setNavOpen] = useState(false);
-  const handleAjukan = () => (onAjukan ? onAjukan() : undefined);
-
-  const showLayanan = layanan && layanan.length > 0;
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -112,13 +41,12 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground" aria-label="Navigasi utama">
-            <a href="#layanan" className="transition-colors duration-200 hover:text-foreground">Pelayanan</a>
             <a href="#cara" className="transition-colors duration-200 hover:text-foreground">Cara mengajukan</a>
             <a href="#kontak" className="transition-colors duration-200 hover:text-foreground">Kontak</a>
           </nav>
 
           <button
-            onClick={handleAjukan}
+            onClick={() => navigate("/ajukan")}
             className="hidden md:inline-flex items-center px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium transition-colors duration-200 hover:bg-primary-dim"
           >
             Ajukan layanan
@@ -157,11 +85,10 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
           aria-hidden={!navOpen}
         >
           <nav className="flex flex-col gap-3 text-sm" aria-label="Navigasi mobile">
-            <a href="#layanan" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-foreground">Pelayanan</a>
             <a href="#cara" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-foreground">Cara mengajukan</a>
             <a href="#kontak" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-foreground">Kontak</a>
             <button
-              onClick={() => { handleAjukan(); setNavOpen(false); }}
+              onClick={() => { navigate("/ajukan"); setNavOpen(false); }}
               className="mt-1 px-4 py-2 bg-primary text-primary-foreground text-left rounded-md font-medium transition-colors duration-200 hover:bg-primary-dim"
             >
               Ajukan layanan
@@ -184,7 +111,7 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
           </p>
           <div className="flex flex-wrap justify-center gap-3 mt-6 sm:mt-8">
             <button
-              onClick={handleAjukan}
+              onClick={() => navigate("/ajukan")}
               className="px-5 py-3 bg-primary text-primary-foreground text-sm rounded-md font-medium transition-colors duration-200 hover:bg-primary-dim"
             >
               Ajukan sekarang
@@ -211,43 +138,6 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* Pelayanan */}
-        <section id="layanan" className="border-t border-border bg-muted/30">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-            <h2 className="text-2xl font-bold text-foreground mb-2">Pelayanan yang tersedia</h2>
-            <p className="text-sm text-muted-foreground mb-8 sm:mb-10">
-              Daftar layanan yang dapat diajukan oleh instansi pemerintah.
-            </p>
-
-            {layananLoading ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <SkeletonCard key={i} />
-                ))}
-              </div>
-            ) : showLayanan ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {layanan.map((l) => (
-                  <div
-                    key={l.title}
-                    className="bg-card rounded-md border border-border p-6 sm:p-7 flex flex-col transition-shadow duration-200 hover:shadow-sm"
-                  >
-                    <Icon name={l.icon} className="w-7 h-7 text-foreground mb-5" />
-                    <h3 className="font-semibold text-foreground mb-2">{l.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">{l.desc}</p>
-                    <p className="text-xs text-primary mt-auto">{l.detail}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 border border-dashed border-border bg-card rounded-md">
-                <Icon name="support" className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Belum ada layanan yang tersedia saat ini.</p>
-              </div>
-            )}
           </div>
         </section>
 
