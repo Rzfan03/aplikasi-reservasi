@@ -8,27 +8,36 @@ export const FONT_SIZES = [
 ]
 
 export const FONTS = [
+  { name: 'poppins', label: 'Poppins (default)', value: "'Poppins', ui-sans-serif, system-ui, sans-serif" },
   { name: 'inter', label: 'Inter', value: "'Inter', ui-sans-serif, system-ui, sans-serif" },
-  { name: 'poppins', label: 'Poppins', value: "'Poppins', ui-sans-serif, system-ui, sans-serif" },
 ]
 
 export type Theme = 'dark' | 'light' | 'system'
-export type ColorPalette = 'zinc' | 'blue' | 'emerald'
+export type ColorPalette = 'blue' | 'emerald' | 'putih'
+export type RadiusChoice = 'off' | 'md' | 'lg'
+
+export const RADIUS_OPTIONS: { name: RadiusChoice; label: string; desc: string; radius: string }[] = [
+  { name: 'off', label: 'Siku', desc: 'Tanpa sudut membulat', radius: '0px' },
+  { name: 'md', label: 'Bulat md', desc: 'Sudut sedikit membulat', radius: '8px' },
+  { name: 'lg', label: 'Bulat lg', desc: 'Sudut sangat membulat', radius: '16px' },
+]
 
 export interface Settings {
   fontSize: string
   font: string
   theme: Theme
   colorPalette: ColorPalette
+  radius: RadiusChoice
 }
 
-const DEFAULT: Settings = { fontSize: '14px', font: 'inter', theme: 'dark', colorPalette: 'zinc' }
+const DEFAULT: Settings = { fontSize: '14px', font: 'poppins', theme: 'light', colorPalette: 'blue', radius: 'off' }
 
 interface SettingsCtx extends Settings {
   setFontSize: (s: string) => void
   setFont: (f: string) => void
   setTheme: (t: Theme) => void
   setColorPalette: (p: ColorPalette) => void
+  setRadius: (r: RadiusChoice) => void
 }
 
 const SettingsContext = createContext<SettingsCtx>({
@@ -37,6 +46,7 @@ const SettingsContext = createContext<SettingsCtx>({
   setFont: () => {},
   setTheme: () => {},
   setColorPalette: () => {},
+  setRadius: () => {},
 })
 
 function getStored(): Settings {
@@ -44,11 +54,13 @@ function getStored(): Settings {
     const raw = localStorage.getItem('app-settings')
     if (raw) {
       const parsed = JSON.parse(raw)
+      const palette: ColorPalette = ['emerald', 'putih'].includes(parsed.colorPalette) ? parsed.colorPalette : 'blue'
       return {
         fontSize: parsed.fontSize || DEFAULT.fontSize,
         font: parsed.font || DEFAULT.font,
         theme: parsed.theme || DEFAULT.theme,
-        colorPalette: parsed.colorPalette || DEFAULT.colorPalette,
+        colorPalette: palette,
+        radius: ['off', 'md', 'lg'].includes(parsed.radius) ? parsed.radius : DEFAULT.radius,
       }
     }
   } catch {}
@@ -73,6 +85,9 @@ function applySettings(s: Settings) {
     poppins: "'Poppins', ui-sans-serif, system-ui, sans-serif",
   }
   if (fonts[s.font]) r.setProperty('--font-sans', fonts[s.font])
+
+  const radii: Record<RadiusChoice, string> = { off: '0rem', md: '0.5rem', lg: '1rem' }
+  r.setProperty('--radius', radii[s.radius])
 
   const resolved = resolveTheme(s.theme)
   document.documentElement.classList.remove('dark', 'light')
@@ -126,9 +141,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const setRadius = useCallback((radius: RadiusChoice) => {
+    setSettings((s) => {
+      const next = { ...s, radius }
+      localStorage.setItem('app-settings', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ ...settings, setFontSize, setFont, setTheme, setColorPalette }),
-    [settings, setFontSize, setFont, setTheme, setColorPalette],
+    () => ({ ...settings, setFontSize, setFont, setTheme, setColorPalette, setRadius }),
+    [settings, setFontSize, setFont, setTheme, setColorPalette, setRadius],
   )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>

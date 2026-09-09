@@ -1,10 +1,10 @@
 import { useRef } from 'react'
-import { Monitor, Moon, Sun, Palette, Camera, Trash2 } from 'lucide-react'
+import { Monitor, Moon, Sun, Palette, Radius, Camera, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import UserAvatar from '@/components/UserAvatar'
 import { useProfilePhotoStore } from '@/hooks/useProfilePhotoStore'
-import { useSettings, FONT_SIZES, FONTS, type Theme, type ColorPalette } from '@/components/SettingsProvider'
+import { useSettings, FONT_SIZES, FONTS, RADIUS_OPTIONS, type Theme, type ColorPalette } from '@/components/SettingsProvider'
 import { useSessionCtx } from '@/lib/SessionProvider'
 
 async function fileToDataUrl(file: File): Promise<string> {
@@ -28,13 +28,13 @@ const THEMES: { value: Theme; label: string; icon: typeof Sun; desc: string }[] 
 ]
 
 const PALETTES: { value: ColorPalette; label: string; desc: string; bg: string }[] = [
-  { value: 'zinc', label: 'Zinc', desc: 'Zinc-800 + white', bg: 'bg-zinc-800' },
-  { value: 'blue', label: 'Blue', desc: 'Blue-500 + white', bg: 'bg-blue-500' },
+  { value: 'blue', label: 'Biru (brand)', desc: 'CTA #4945FF + navy', bg: 'bg-[#4945FF]' },
   { value: 'emerald', label: 'Emerald', desc: 'Emerald-500 + white', bg: 'bg-emerald-500' },
+  { value: 'putih', label: 'Putih', desc: 'White accent + dark text', bg: 'bg-white ring-1 ring-border' },
 ]
 
 export default function PengaturanPage() {
-  const { fontSize, setFontSize, font, setFont, theme, setTheme, colorPalette, setColorPalette } = useSettings()
+  const { fontSize, setFontSize, font, setFont, theme, setTheme, colorPalette, setColorPalette, radius, setRadius } = useSettings()
   const { user } = useSessionCtx()
   const { photo, setPhoto } = useProfilePhotoStore()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -219,6 +219,49 @@ export default function PengaturanPage() {
                   <div className="text-center">
                     <p className="text-sm font-semibold text-foreground leading-snug">{p.label}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{p.desc}</p>
+                  </div>
+                  {isActive && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Aktif</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Sudut (Rounded) ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Radius className="size-4" />
+            Sudut (Rounded)
+          </CardTitle>
+          <CardDescription>Pilih tingkat kebulatan sudut kartu & tombol</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            {RADIUS_OPTIONS.map((r) => {
+              const isActive = radius === r.name
+              return (
+                <button
+                  key={r.name}
+                  onClick={() => setRadius(r.name)}
+                  className={`flex flex-col items-center gap-2.5 rounded-md border-2 p-4 transition-all ${
+                    isActive
+                      ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/40 bg-transparent'
+                  }`}
+                >
+                  <div className="flex size-9 items-center justify-center">
+                    <div
+                      className="size-7 border-2 border-primary"
+                      style={{ borderRadius: r.radius }}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground leading-snug">{r.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{r.desc}</p>
                   </div>
                   {isActive && (
                     <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Aktif</span>

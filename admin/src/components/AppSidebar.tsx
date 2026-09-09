@@ -12,7 +12,6 @@ import {
   User,
 } from 'lucide-react'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
-import BrandMark from '@/components/BrandMark'
 import UserAvatar from '@/components/UserAvatar'
 import { BRAND } from '@/lib/branding'
 import {
@@ -78,15 +77,12 @@ export default function AppSidebar({ user, onSignOut }: Props) {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="px-3 py-4">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <BrandMark />
-          {!isCollapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">{BRAND.nama}</span>
-              <span className="truncate text-[10px] text-sidebar-foreground/60 leading-tight">{BRAND.instansi}</span>
-            </div>
-          )}
-        </div>
+        {!isCollapsed && (
+          <div className="flex flex-col min-w-0">
+            <span className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">{BRAND.nama}</span>
+            <span className="truncate text-[10px] text-sidebar-foreground/60 leading-tight">{BRAND.instansi}</span>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-1">

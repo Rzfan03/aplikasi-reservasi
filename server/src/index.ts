@@ -9,7 +9,8 @@ import { layananRouter, instansiRouter } from './routes/layanan.js'
 import { uploadsDir } from './upload.js'
 import { requireAdmin } from './middleware/requireAdmin.js'
 import { subscribe } from './sse.js'
-import { isPrismaError } from './wrap.js'
+import { isPrismaError, wrap } from './wrap.js'
+import { prisma } from './db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -46,6 +47,15 @@ app.get('/api/requests/events', requireAdmin, (req, res) => {
   const heartbeat = setInterval(() => res.write(': ping\n\n'), 15000)
   req.on('close', () => clearInterval(heartbeat))
 })
+
+// Publik: daftar instansi/layanan untuk formulir pengajuan (tanpa autentikasi)
+app.get('/api/public/instansi', wrap(async (_req, res) => {
+  res.json(await prisma.instansi.findMany({ orderBy: { createdAt: 'desc' } }))
+}))
+
+app.get('/api/public/layanan', wrap(async (_req, res) => {
+  res.json(await prisma.layanan.findMany({ orderBy: { urutan: 'asc' } }))
+}))
 
 app.use('/api/requests', requestsRouter)
 app.use('/api/layanan', layananRouter)

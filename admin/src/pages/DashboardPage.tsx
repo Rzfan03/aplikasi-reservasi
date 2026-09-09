@@ -113,22 +113,26 @@ export default function DashboardPage() {
   const firstName = user?.name?.split(' ')[0] ?? 'Admin'
 
   const loadStats = useCallback(async () => {
-    try {
-      const [s, p, pend, w] = await Promise.all([
-        fetchStats(),
-        fetchRequestsPaged({ limit: 5, page: 1 }),
-        fetchRequestsPaged({ status: 'PENDING', limit: 4, page: 1 }),
-        fetchWeekly(),
-      ])
-      setStats(s)
-      setRecent(p.data)
-      setPendingList(pend.data)
-      setWeeklyData(w)
-    } catch {
-    } finally {
-      setLoading(false)
-    }
+    const [s, p, pend, w] = await Promise.allSettled([
+      fetchStats(),
+      fetchRequestsPaged({ limit: 5, page: 1 }),
+      fetchRequestsPaged({ status: 'PENDING', limit: 4, page: 1 }),
+      fetchWeekly(),
+    ])
+    if (s.status === 'fulfilled') setStats(s.value)
+    if (p.status === 'fulfilled') setRecent(p.value.data)
+    if (pend.status === 'fulfilled') setPendingList(pend.value.data)
+    if (w.status === 'fulfilled') setWeeklyData(w.value)
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (loading || stats) return
+    const timer = setTimeout(() => {
+      void loadStats()
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [loading, stats, loadStats])
 
   useEffect(() => {
     loadStats()
@@ -244,8 +248,8 @@ export default function DashboardPage() {
     },
     {
       label: 'Hari Tersibuk',
-      value: busiestDay.date,
-      sub: `${busiestDay.count} permohonan`,
+      value: weeklyTotal > 0 ? busiestDay.date : '—',
+      sub: weeklyTotal > 0 ? `${busiestDay.count} permohonan` : 'belum ada data',
       icon: Flame,
       color: 'bg-warning/10 text-warning',
       iconColor: 'text-warning',

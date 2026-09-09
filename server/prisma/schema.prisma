@@ -32,6 +32,7 @@ model Request {
   nama        String
   nip         String
   jabatan     String
+  email       String?
   layanan     String
   tanggal     DateTime
   deskripsi   String?

@@ -5,6 +5,7 @@ import { Router } from 'express'
 import { prisma } from '../db.js'
 import { uploadPdf, uploadsDir } from '../upload.js'
 import { requireAdmin } from '../middleware/requireAdmin.js'
+import { sendStatusEmail } from '../email.js'
 import { broadcast } from '../sse.js'
 import { wrap } from '../wrap.js'
 
@@ -16,8 +17,8 @@ requestsRouter.post('/', uploadPdf.single('pdf'), wrap(async (req, res) => {
       res.status(400).json({ error: 'PDF file is required' })
       return
     }
-    const { instansi, nama, nip, jabatan, layanan, tanggal, deskripsi } = req.body
-    if (!instansi || !nama || !nip || !jabatan || !layanan || !tanggal) {
+    const { instansi, nama, nip, jabatan, email, layanan, tanggal, deskripsi } = req.body
+    if (!instansi || !nama || !nip || !jabatan || !email || !layanan || !tanggal) {
       res.status(400).json({ error: 'Missing required fields' })
       return
     }
@@ -28,6 +29,7 @@ requestsRouter.post('/', uploadPdf.single('pdf'), wrap(async (req, res) => {
         nama,
         nip,
         jabatan,
+        email,
         layanan,
         tanggal: new Date(tanggal),
         deskripsi: deskripsi || null,
@@ -71,7 +73,10 @@ requestsRouter.get('/weekly', requireAdmin, wrap(async (_req, res) => {
   const data: { date: string; count: number }[] = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
-    data.push({ date: d.toLocaleDateString('id-ID', { weekday: 'short' }), count: counts[d.toISOString().slice(0, 10)] })
+    data.push({
+      date: `${d.toLocaleDateString('id-ID', { weekday: 'short' })} ${d.getDate()}/${d.getMonth() + 1}`,
+      count: counts[d.toISOString().slice(0, 10)],
+    })
   }
   res.json(data)
 }))
@@ -126,6 +131,10 @@ requestsRouter.put('/:id/status', requireAdmin, wrap(async (req, res) => {
       rejectReason: status === 'REJECTED' ? rejectReason.trim() : null,
     },
   })
+  if (updated.email) {
+    sendStatusEmail({ to: updated.email, nama: updated.nama, instansi: updated.instansi, layanan: updated.layanan, tanggal: updated.tanggal, status: updated.status, rejectReason: updated.rejectReason, statusToken: updated.statusToken })
+      .catch((err) => console.error('[email] send failed:', err.message))
+  }
   broadcast({ type: 'status_changed', id: updated.id, nama: updated.nama, status: updated.status, createdAt: updated.createdAt })
   res.json(updated)
 }))
@@ -142,6 +151,10 @@ requestsRouter.put('/bulk/status', requireAdmin, wrap(async (req, res) => {
   if (status === 'REJECTED' && !rejectReason?.trim()) {
     res.status(400).json({ error: 'Alasan penolakan wajib diisi' }); return
   }
+  const targets = await prisma.request.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, email: true, nama: true, instansi: true, layanan: true, tanggal: true, statusToken: true },
+  })
   const updated = await prisma.request.updateMany({
     where: { id: { in: ids } },
     data: {
@@ -150,6 +163,12 @@ requestsRouter.put('/bulk/status', requireAdmin, wrap(async (req, res) => {
       rejectReason: status === 'REJECTED' ? rejectReason.trim() : null,
     },
   })
+  for (const t of targets) {
+    if (t.email) {
+      sendStatusEmail({ to: t.email, nama: t.nama, instansi: t.instansi, layanan: t.layanan, tanggal: t.tanggal, status, rejectReason, statusToken: t.statusToken })
+        .catch((err) => console.error('[email] send failed:', err.message))
+    }
+  }
   broadcast({ type: 'bulk_status_changed', status, count: updated.count })
   res.json({ count: updated.count })
 }))
@@ -195,6 +214,6 @@ requestsRouter.get('/:statusToken', wrap(async (req, res) => {
   res.json({
     id: request.id, instansi: request.instansi, nama: request.nama,
     layanan: request.layanan, tanggal: request.tanggal, status: request.status,
-    adminEmail: request.adminEmail, rejectReason: request.rejectReason, createdAt: request.createdAt,
+    rejectReason: request.rejectReason, createdAt: request.createdAt,
   })
 }))

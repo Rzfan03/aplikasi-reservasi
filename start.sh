@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start server (API) + admin (UI) at once.
+# Start server (API :4000) + form (UI :5173) + admin dashboard (:5174) at once.
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -13,14 +13,18 @@ echo "Starting API (server) on :4000..."
 (cd "$ROOT/server" && npm run dev) &
 SERVER_PID=$!
 
-echo "Starting Admin (UI) on :5174..."
-(cd "$ROOT/admin" && npm run dev) &
+echo "Starting Form (public UI) on :5173..."
+(cd "$ROOT" && npm run dev) &
+FORM_PID=$!
+
+echo "Starting Dashboard (admin UI) on :5174..."
+(cd "$ROOT/admin" && npm run dev -- --port 5174) &
 ADMIN_PID=$!
 
 cleanup() {
   echo
   echo "Stopping..."
-  kill "$SERVER_PID" "$ADMIN_PID" 2>/dev/null || true
+  kill "$SERVER_PID" "$FORM_PID" "$ADMIN_PID" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 

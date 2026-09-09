@@ -76,7 +76,7 @@ Sistem: Notifikasi (badge), Pengaturan
 - `DATABASE_URL_UNPOOLED` for direct connection, `DATABASE_URL` for pooled
 
 ### TypeScript
-- Run `./node_modules/.bin/tsc --noEmit` to verify
+- Root `tsconfig.json` has `"files": []` → `tsc --noEmit` is a **no-op**. Use `npm run build` (runs `tsc -b`) or `./node_modules/.bin/tsc -b` to verify
 - `noUnusedLocals: true`, `noUnusedParameters: true`
 
 ### npm install
