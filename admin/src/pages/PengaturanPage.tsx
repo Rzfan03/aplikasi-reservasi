@@ -1,6 +1,25 @@
-import { Monitor, Moon, Sun, Palette } from 'lucide-react'
+import { useRef } from 'react'
+import { Monitor, Moon, Sun, Palette, Camera, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import UserAvatar from '@/components/UserAvatar'
+import { useProfilePhotoStore } from '@/hooks/useProfilePhotoStore'
 import { useSettings, FONT_SIZES, FONTS, type Theme, type ColorPalette } from '@/components/SettingsProvider'
+import { useSessionCtx } from '@/lib/SessionProvider'
+
+async function fileToDataUrl(file: File): Promise<string> {
+  const src = await createImageBitmap(file)
+  const max = 256
+  const scale = Math.min(1, max / Math.max(src.width, src.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(src.width * scale)
+  canvas.height = Math.round(src.height * scale)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas unsupported')
+  ctx.drawImage(src, 0, 0, canvas.width, canvas.height)
+  src.close()
+  return canvas.toDataURL('image/jpeg', 0.85)
+}
 
 const THEMES: { value: Theme; label: string; icon: typeof Sun; desc: string }[] = [
   { value: 'dark', label: 'Gelap', icon: Moon, desc: 'Latar belakang gelap' },
@@ -16,9 +35,52 @@ const PALETTES: { value: ColorPalette; label: string; desc: string; bg: string }
 
 export default function PengaturanPage() {
   const { fontSize, setFontSize, font, setFont, theme, setTheme, colorPalette, setColorPalette } = useSettings()
+  const { user } = useSessionCtx()
+  const { photo, setPhoto } = useProfilePhotoStore()
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      setPhoto(await fileToDataUrl(file))
+    } catch {
+      alert('Gagal memuat gambar. Pilih file gambar yang valid.')
+    }
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* ── Foto Profil ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Camera className="size-4" />
+            Foto Profil
+          </CardTitle>
+          <CardDescription>Foto ditampilkan di sidebar dan dashboard</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <UserAvatar name={user?.name} email={user?.email} className="size-20 text-xl" />
+            <div className="flex flex-col gap-2">
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleSelect} />
+              <Button variant="outline" onClick={() => fileRef.current?.click()}>
+                <Camera className="size-4" />
+                Pilih Foto
+              </Button>
+              {photo && (
+                <Button variant="ghost" onClick={() => setPhoto(null)}>
+                  <Trash2 className="size-4" />
+                  Hapus Foto
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ── Tema ── */}
       <Card>
         <CardHeader>

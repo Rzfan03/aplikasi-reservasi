@@ -6,12 +6,12 @@ import { prisma } from '../db.js'
 import { uploadPdf, uploadsDir } from '../upload.js'
 import { requireAdmin } from '../middleware/requireAdmin.js'
 import { broadcast } from '../sse.js'
+import { wrap } from '../wrap.js'
 
 export const requestsRouter = Router()
 
 // User submit
-requestsRouter.post('/', uploadPdf.single('pdf'), async (req, res) => {
-  try {
+requestsRouter.post('/', uploadPdf.single('pdf'), wrap(async (req, res) => {
     if (!req.file) {
       res.status(400).json({ error: 'PDF file is required' })
       return
@@ -37,14 +37,10 @@ requestsRouter.post('/', uploadPdf.single('pdf'), async (req, res) => {
     })
     broadcast({ type: 'request_created', id: request.id, nama: request.nama, instansi: request.instansi, layanan: request.layanan, createdAt: request.createdAt })
     res.status(201).json({ id: request.id, statusToken })
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
+}))
 
 // Admin: stats
-requestsRouter.get('/stats', requireAdmin, async (_req, res) => {
+requestsRouter.get('/stats', requireAdmin, wrap(async (_req, res) => {
   const [total, pending, approved, rejected, today] = await Promise.all([
     prisma.request.count(),
     prisma.request.count({ where: { status: 'PENDING' } }),
@@ -53,10 +49,10 @@ requestsRouter.get('/stats', requireAdmin, async (_req, res) => {
     prisma.request.count({ where: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
   ])
   res.json({ total, pending, approved, rejected, today })
-})
+}))
 
 // Admin: weekly activity (last 7 days)
-requestsRouter.get('/weekly', requireAdmin, async (_req, res) => {
+requestsRouter.get('/weekly', requireAdmin, wrap(async (_req, res) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const records = await prisma.request.findMany({
     where: { createdAt: { gte: sevenDaysAgo } },
@@ -78,10 +74,10 @@ requestsRouter.get('/weekly', requireAdmin, async (_req, res) => {
     data.push({ date: d.toLocaleDateString('id-ID', { weekday: 'short' }), count: counts[d.toISOString().slice(0, 10)] })
   }
   res.json(data)
-})
+}))
 
 // Admin: list (paged + filters)
-requestsRouter.get('/', requireAdmin, async (req, res) => {
+requestsRouter.get('/', requireAdmin, wrap(async (req, res) => {
   const { status, dateFrom, dateTo, search, page = '1', limit = '10' } = req.query
   const where: Record<string, unknown> = {}
   if (status) where.status = status
@@ -104,17 +100,17 @@ requestsRouter.get('/', requireAdmin, async (req, res) => {
     prisma.request.count({ where }),
   ])
   res.json({ data, total, page: p, limit: l })
-})
+}))
 
 // Admin: get one by id
-requestsRouter.get('/admin/:id', requireAdmin, async (req, res) => {
+requestsRouter.get('/admin/:id', requireAdmin, wrap(async (req, res) => {
   const request = await prisma.request.findUnique({ where: { id: req.params.id } })
   if (!request) { res.status(404).json({ error: 'Not found' }); return }
   res.json(request)
-})
+}))
 
 // Admin: update status
-requestsRouter.put('/:id/status', requireAdmin, async (req, res) => {
+requestsRouter.put('/:id/status', requireAdmin, wrap(async (req, res) => {
   const { status, rejectReason } = req.body
   if (!['APPROVED', 'REJECTED'].includes(status)) {
     res.status(400).json({ error: 'Invalid status' }); return
@@ -132,10 +128,10 @@ requestsRouter.put('/:id/status', requireAdmin, async (req, res) => {
   })
   broadcast({ type: 'status_changed', id: updated.id, nama: updated.nama, status: updated.status, createdAt: updated.createdAt })
   res.json(updated)
-})
+}))
 
 // Admin: bulk update status
-requestsRouter.put('/bulk/status', requireAdmin, async (req, res) => {
+requestsRouter.put('/bulk/status', requireAdmin, wrap(async (req, res) => {
   const { ids, status, rejectReason } = req.body
   if (!Array.isArray(ids) || ids.length === 0) {
     res.status(400).json({ error: 'ids harus diisi' }); return
@@ -156,10 +152,10 @@ requestsRouter.put('/bulk/status', requireAdmin, async (req, res) => {
   })
   broadcast({ type: 'bulk_status_changed', status, count: updated.count })
   res.json({ count: updated.count })
-})
+}))
 
 // Admin: bulk delete
-requestsRouter.delete('/bulk', requireAdmin, async (req, res) => {
+requestsRouter.delete('/bulk', requireAdmin, wrap(async (req, res) => {
   const { ids } = req.body
   if (!Array.isArray(ids) || ids.length === 0) {
     res.status(400).json({ error: 'ids harus diisi' }); return
@@ -172,10 +168,10 @@ requestsRouter.delete('/bulk', requireAdmin, async (req, res) => {
   await Promise.allSettled(found.map((r) => unlink(path.join(uploadsDir, r.pdfFile))))
   broadcast({ type: 'bulk_request_deleted', count: found.length })
   res.json({ count: found.length })
-})
+}))
 
 // Admin: delete
-requestsRouter.delete('/:id', requireAdmin, async (req, res) => {
+requestsRouter.delete('/:id', requireAdmin, wrap(async (req, res) => {
   const request = await prisma.request.findUnique({ where: { id: req.params.id } })
   if (!request) { res.status(404).json({ error: 'Not found' }); return }
   await prisma.request.delete({ where: { id: request.id } })
@@ -184,10 +180,10 @@ requestsRouter.delete('/:id', requireAdmin, async (req, res) => {
   } catch {}
   broadcast({ type: 'request_deleted', id: request.id })
   res.json({ ok: true })
-})
+}))
 
 // User check status by token (must be last)
-requestsRouter.get('/:statusToken', async (req, res) => {
+requestsRouter.get('/:statusToken', wrap(async (req, res) => {
   const { statusToken } = req.params
   if (['stats', 'weekly', 'bulk', 'admin'].includes(statusToken)) {
     res.status(404).json({ error: 'Not found' }); return
@@ -201,4 +197,4 @@ requestsRouter.get('/:statusToken', async (req, res) => {
     layanan: request.layanan, tanggal: request.tanggal, status: request.status,
     adminEmail: request.adminEmail, rejectReason: request.rejectReason, createdAt: request.createdAt,
   })
-})
+}))

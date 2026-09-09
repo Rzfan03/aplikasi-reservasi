@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
 import BrandMark from '@/components/BrandMark'
+import UserAvatar from '@/components/UserAvatar'
 import { BRAND } from '@/lib/branding'
 import {
   Sidebar,
@@ -71,10 +72,6 @@ export default function AppSidebar({ user, onSignOut }: Props) {
   const [openUserMenu, setOpenUserMenu] = useState(false)
   const { state } = useSidebar()
   const navigate = useNavigate()
-
-  const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-    : user?.email?.[0]?.toUpperCase() ?? '?'
 
   const isCollapsed = state === 'collapsed'
 
@@ -143,9 +140,7 @@ export default function AppSidebar({ user, onSignOut }: Props) {
                   size="lg"
                   className="data-[state=open]:bg-muted h-11 px-2.5"
                 >
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
-                    {initials}
-                  </div>
+                  <UserAvatar name={user?.name} email={user?.email} />
                   {!isCollapsed && (
                     <div className="grid flex-1 text-start text-sm leading-tight min-w-0">
                       <span className="truncate font-semibold text-sidebar-foreground">{user?.name ?? 'Admin'}</span>
@@ -163,9 +158,7 @@ export default function AppSidebar({ user, onSignOut }: Props) {
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2.5 px-2 py-2 text-sm">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
-                      {initials}
-                    </div>
+                    <UserAvatar name={user?.name} email={user?.email} />
                     <div className="grid flex-1 text-start text-sm leading-tight min-w-0">
                       <span className="truncate font-semibold">{user?.name ?? 'Admin'}</span>
                       <span className="truncate text-xs text-muted-foreground">{user?.email}</span>

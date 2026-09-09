@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequest, updateStatus } from '@/lib/api'
+import { fetchRequest, updateStatus, fetchPdf } from '@/lib/api'
 import type { RequestData, Status } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -25,11 +25,6 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   )
 }
 
-function attach(r: RequestData) {
-  const API = import.meta.env.VITE_API_URL
-  return `${API}/uploads/${r.pdfFile}`
-}
-
 export default function PermohonanDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -38,6 +33,8 @@ export default function PermohonanDetailPage() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -72,6 +69,19 @@ export default function PermohonanDetailPage() {
       alert(e instanceof Error ? e.message : 'Gagal menyimpan')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleOpenPdf() {
+    if (!item || pdfUrl) return
+    setPdfLoading(true)
+    try {
+      const blob = await fetchPdf(item.pdfFile)
+      setPdfUrl(URL.createObjectURL(blob))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Gagal memuat lampiran')
+    } finally {
+      setPdfLoading(false)
     }
   }
 
@@ -132,15 +142,10 @@ export default function PermohonanDetailPage() {
             </div>
           )}
           <div className="pt-2">
-            <a
-              href={attach(item)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4 hover:text-primary-dim"
-            >
+            <Button variant="outline" size="sm" onClick={handleOpenPdf} disabled={pdfLoading || !!pdfUrl}>
               <FileText className="size-4" />
-              Buka lampiran PDF
-            </a>
+              {pdfLoading ? 'Memuat…' : 'Lihat lampiran PDF'}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -157,6 +162,21 @@ export default function PermohonanDetailPage() {
             <Printer className="mr-2 size-4" /> Cetak
           </Button>
         </div>
+      )}
+
+      {pdfUrl && (
+        <Dialog open onOpenChange={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null) }}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Lampiran PDF</DialogTitle>
+            </DialogHeader>
+            <iframe
+              src={pdfUrl}
+              title="Lampiran PDF"
+              className="h-[70vh] w-full rounded-md border border-border bg-muted"
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
