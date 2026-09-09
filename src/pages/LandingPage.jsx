@@ -76,31 +76,14 @@ function Icon({ name, className }) {
   );
 }
 
-function Seal() {
-  return (
-    <svg viewBox="0 0 220 220" className="w-full h-full" aria-hidden="true">
-      <circle cx="110" cy="110" r="104" fill="none" stroke="#B8862B" strokeWidth="1.5" />
-      <circle cx="110" cy="110" r="90" fill="none" stroke="#B8862B" strokeWidth="1" strokeDasharray="2 5" />
-      <circle cx="110" cy="110" r="70" fill="none" stroke="#1C2B45" strokeWidth="1" />
-      <text x="110" y="103" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="30" fill="#1C2B45">KS</text>
-      <text x="110" y="126" textAnchor="middle" fontFamily="Public Sans, sans-serif" fontSize="8" letterSpacing="1" fill="#6B6355">
-        DISKOMINFOTIK
-      </text>
-      <text x="110" y="137" textAnchor="middle" fontFamily="Public Sans, sans-serif" fontSize="8" letterSpacing="1" fill="#6B6355">
-        SUMBAWA
-      </text>
-    </svg>
-  );
-}
-
 function SkeletonCard() {
   return (
-    <div className="bg-[#F6F3EC] p-7 flex flex-col animate-pulse">
-      <div className="w-7 h-7 rounded bg-[#1C2B45]/10 mb-5" />
-      <div className="h-4 w-28 bg-[#1C2B45]/10 rounded mb-2" />
-      <div className="h-3 w-full bg-[#1C2B45]/10 rounded mb-1" />
-      <div className="h-3 w-3/4 bg-[#1C2B45]/10 rounded mb-4" />
-      <div className="h-3 w-1/2 bg-[#B8862B]/10 rounded mt-auto" />
+    <div className="bg-card p-7 flex flex-col animate-pulse">
+      <div className="w-7 h-7 rounded-md bg-muted mb-5" />
+      <div className="h-4 w-28 bg-muted rounded mb-2" />
+      <div className="h-3 w-full bg-muted rounded mb-1" />
+      <div className="h-3 w-3/4 bg-muted rounded mb-4" />
+      <div className="h-3 w-1/2 bg-primary/10 rounded mt-auto" />
     </div>
   );
 }
@@ -112,46 +95,37 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
   const showLayanan = layanan && layanan.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#F6F3EC] text-[#22201B]">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap');
-        .font-display { font-family: 'Fraunces', serif; }
-        .font-body { font-family: 'Public Sans', sans-serif; }
-        .skip-link:focus { position: absolute; top: 0; left: 0; padding: 0.75rem 1.5rem; background: #1C2B45; color: #F6F3EC; z-index: 50; outline: 2px solid #B8862B; outline-offset: 2px; }
-      `}</style>
+    <div className="min-h-screen bg-background text-foreground">
 
-      <a href="#main-content" className="skip-link font-body sr-only focus:not-sr-only">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-50 focus:px-6 focus:py-3 focus:bg-primary focus:text-primary-foreground focus:outline-2 focus:outline-ring focus:outline-offset-2">
         Langsung ke konten utama
       </a>
 
       {/* Header */}
-      <header className="font-body sticky top-0 z-20 bg-[#F6F3EC]/95 backdrop-blur border-b border-[#1C2B45]/15">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full border border-[#B8862B] flex items-center justify-center text-[#1C2B45] font-display text-sm" aria-hidden="true">
-              KS
-            </div>
+          <div className="flex items-center">
             <span className="text-sm leading-tight">
-              <span className="block font-medium text-[#1C2B45]">Diskominfotik</span>
-              <span className="block text-[#6B6355] text-xs">Kabupaten Sumbawa</span>
+              <span className="block font-medium text-foreground">Diskominfotik</span>
+              <span className="block text-muted-foreground text-xs">Kabupaten Sumbawa</span>
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm text-[#3A362E]" aria-label="Navigasi utama">
-            <a href="#layanan" className="transition-colors duration-200 hover:text-[#1C2B45]">Pelayanan</a>
-            <a href="#cara" className="transition-colors duration-200 hover:text-[#1C2B45]">Cara mengajukan</a>
-            <a href="#kontak" className="transition-colors duration-200 hover:text-[#1C2B45]">Kontak</a>
+          <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground" aria-label="Navigasi utama">
+            <a href="#layanan" className="transition-colors duration-200 hover:text-foreground">Pelayanan</a>
+            <a href="#cara" className="transition-colors duration-200 hover:text-foreground">Cara mengajukan</a>
+            <a href="#kontak" className="transition-colors duration-200 hover:text-foreground">Kontak</a>
           </nav>
 
           <button
             onClick={handleAjukan}
-            className="hidden md:inline-flex items-center px-4 py-2 text-sm bg-[#1C2B45] text-[#F6F3EC] transition-colors duration-200 hover:bg-[#16223A]"
+            className="hidden md:inline-flex items-center px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium transition-colors duration-200 hover:bg-primary-dim"
           >
             Ajukan layanan
           </button>
 
           <button
-            className="md:hidden text-[#1C2B45] p-1.5 -mr-1.5"
+            className="md:hidden text-foreground p-1.5 -mr-1.5"
             onClick={() => setNavOpen((v) => !v)}
             aria-label={navOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={navOpen}
@@ -177,18 +151,18 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
 
         <div
           id="mobile-nav"
-          className={`md:hidden border-t border-[#1C2B45]/15 px-4 sm:px-6 overflow-hidden transition-all duration-200 ease-in-out ${
+          className={`md:hidden border-t border-border px-4 sm:px-6 overflow-hidden transition-all duration-200 ease-in-out ${
             navOpen ? "max-h-64 py-4 opacity-100" : "max-h-0 opacity-0"
           }`}
           aria-hidden={!navOpen}
         >
-          <nav className="flex flex-col gap-3 text-sm font-body" aria-label="Navigasi mobile">
-            <a href="#layanan" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-[#1C2B45]">Pelayanan</a>
-            <a href="#cara" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-[#1C2B45]">Cara mengajukan</a>
-            <a href="#kontak" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-[#1C2B45]">Kontak</a>
+          <nav className="flex flex-col gap-3 text-sm" aria-label="Navigasi mobile">
+            <a href="#layanan" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-foreground">Pelayanan</a>
+            <a href="#cara" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-foreground">Cara mengajukan</a>
+            <a href="#kontak" onClick={() => setNavOpen(false)} className="py-1 transition-colors duration-200 hover:text-foreground">Kontak</a>
             <button
               onClick={() => { handleAjukan(); setNavOpen(false); }}
-              className="mt-1 px-4 py-2 bg-[#1C2B45] text-[#F6F3EC] text-left transition-colors duration-200 hover:bg-[#16223A]"
+              className="mt-1 px-4 py-2 bg-primary text-primary-foreground text-left rounded-md font-medium transition-colors duration-200 hover:bg-primary-dim"
             >
               Ajukan layanan
             </button>
@@ -198,48 +172,42 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
 
       <main id="main-content">
         {/* Hero */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 md:pt-20 md:pb-24 grid md:grid-cols-[1.2fr_0.8fr] gap-8 sm:gap-12 items-center">
-          <div>
-            <p className="font-body text-xs text-[#8A5A1E] mb-4">No. Ref 001/DISKOMINFOTIK/2026</p>
-            <h1 className="font-display text-3xl sm:text-[2.5rem] md:text-[3.4rem] leading-[1.08] text-[#1C2B45]">
-              Ajukan layanan Kominfo tanpa antre ke kantor.
-            </h1>
-            <p className="font-body text-[#3A362E] mt-4 sm:mt-5 max-w-md leading-relaxed">
-              Instansi di Kabupaten Sumbawa dapat mengajukan peminjaman ruang rapat,
-              alat, dan bantuan teknis langsung dari sini. Cukup isi formulir -
-              tidak perlu membuat akun.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-6 sm:mt-8">
-              <button
-                onClick={handleAjukan}
-                className="font-body px-5 py-3 bg-[#1C2B45] text-[#F6F3EC] text-sm transition-colors duration-200 hover:bg-[#16223A]"
-              >
-                Ajukan sekarang
-              </button>
-              <a
-                href="#cara"
-                className="font-body px-5 py-3 border border-[#1C2B45]/30 text-[#1C2B45] text-sm transition-colors duration-200 hover:border-[#1C2B45] hover:bg-[#1C2B45]/5"
-              >
-                Lihat cara mengajukan
-              </a>
-            </div>
-          </div>
-
-          <div className="w-36 h-36 sm:w-44 sm:h-44 md:w-56 md:h-56 mx-auto">
-            <Seal />
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 md:pt-20 md:pb-24 text-center">
+          <p className="text-xs text-primary font-medium mb-4">No. Ref 001/DISKOMINFOTIK/2026</p>
+          <h1 className="text-3xl sm:text-[2.5rem] md:text-[3.4rem] leading-[1.08] font-bold text-foreground tracking-tight max-w-3xl mx-auto">
+            Ajukan layanan Kominfo tanpa antre ke kantor.
+          </h1>
+          <p className="text-muted-foreground mt-4 sm:mt-5 max-w-lg mx-auto leading-relaxed">
+            Instansi di Kabupaten Sumbawa dapat mengajukan peminjaman ruang rapat,
+            alat, dan bantuan teknis langsung dari sini. Cukup isi formulir -
+            tidak perlu membuat akun.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 mt-6 sm:mt-8">
+            <button
+              onClick={handleAjukan}
+              className="px-5 py-3 bg-primary text-primary-foreground text-sm rounded-md font-medium transition-colors duration-200 hover:bg-primary-dim"
+            >
+              Ajukan sekarang
+            </button>
+            <a
+              href="#cara"
+              className="px-5 py-3 border border-border text-foreground text-sm rounded-md font-medium transition-colors duration-200 hover:border-primary hover:bg-primary/5"
+            >
+              Lihat cara mengajukan
+            </a>
           </div>
         </section>
 
         {/* Cara mengajukan */}
-        <section id="cara" className="border-t border-[#1C2B45]/15">
+        <section id="cara" className="border-t border-border">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-            <h2 className="font-display text-2xl text-[#1C2B45] mb-8 sm:mb-10">Cara mengajukan</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-8 sm:mb-10">Cara mengajukan</h2>
             <div className="grid sm:grid-cols-3 gap-8 sm:gap-10">
               {steps.map((s, i) => (
-                <div key={s.n} className={i > 0 ? "sm:pl-10 sm:border-l sm:border-[#1C2B45]/15" : ""}>
-                  <div className="font-display text-3xl text-[#B8862B] mb-3">{s.n}</div>
-                  <h3 className="font-body font-semibold text-[#1C2B45] mb-2">{s.title}</h3>
-                  <p className="font-body text-sm text-[#3A362E] leading-relaxed">{s.desc}</p>
+                <div key={s.n} className={i > 0 ? "sm:pl-10 sm:border-l sm:border-border" : ""}>
+                  <div className="text-3xl font-bold text-primary mb-3">{s.n}</div>
+                  <h3 className="font-semibold text-foreground mb-2">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -247,48 +215,48 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
         </section>
 
         {/* Pelayanan */}
-        <section id="layanan" className="border-t border-[#1C2B45]/15 bg-white/40">
+        <section id="layanan" className="border-t border-border bg-muted/30">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-            <h2 className="font-display text-2xl text-[#1C2B45] mb-2">Pelayanan yang tersedia</h2>
-            <p className="font-body text-sm text-[#6B6355] mb-8 sm:mb-10">
+            <h2 className="text-2xl font-bold text-foreground mb-2">Pelayanan yang tersedia</h2>
+            <p className="text-sm text-muted-foreground mb-8 sm:mb-10">
               Daftar layanan yang dapat diajukan oleh instansi pemerintah.
             </p>
 
             {layananLoading ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1C2B45]/15 border border-[#1C2B45]/15">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
             ) : showLayanan ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1C2B45]/15 border border-[#1C2B45]/15">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {layanan.map((l) => (
                   <div
                     key={l.title}
-                    className="bg-[#F6F3EC] p-6 sm:p-7 flex flex-col transition-shadow duration-200 hover:shadow-[0_2px_12px_rgba(28,43,69,0.08)]"
+                    className="bg-card rounded-md border border-border p-6 sm:p-7 flex flex-col transition-shadow duration-200 hover:shadow-sm"
                   >
-                    <Icon name={l.icon} className="w-7 h-7 text-[#1C2B45] mb-5" />
-                    <h3 className="font-body font-semibold text-[#1C2B45] mb-2">{l.title}</h3>
-                    <p className="font-body text-sm text-[#3A362E] leading-relaxed mb-4">{l.desc}</p>
-                    <p className="font-body text-xs text-[#8A5A1E] mt-auto">{l.detail}</p>
+                    <Icon name={l.icon} className="w-7 h-7 text-foreground mb-5" />
+                    <h3 className="font-semibold text-foreground mb-2">{l.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">{l.desc}</p>
+                    <p className="text-xs text-primary mt-auto">{l.detail}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 border border-dashed border-[#1C2B45]/20 bg-[#F6F3EC]">
-                <Icon name="support" className="w-10 h-10 text-[#1C2B45]/30 mx-auto mb-3" />
-                <p className="font-body text-sm text-[#6B6355]">Belum ada layanan yang tersedia saat ini.</p>
+              <div className="text-center py-12 border border-dashed border-border bg-card rounded-md">
+                <Icon name="support" className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Belum ada layanan yang tersedia saat ini.</p>
               </div>
             )}
           </div>
         </section>
 
         {/* Kontak / info */}
-        <section id="kontak" className="border-t border-[#1C2B45]/15">
+        <section id="kontak" className="border-t border-border">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 grid sm:grid-cols-2 gap-10 sm:gap-12">
             <div>
-              <h2 className="font-display text-2xl text-[#1C2B45] mb-5">Jam layanan</h2>
-              <dl className="font-body text-sm text-[#3A362E] divide-y divide-[#1C2B45]/10">
+              <h2 className="text-2xl font-bold text-foreground mb-5">Jam layanan</h2>
+              <dl className="text-sm text-muted-foreground divide-y divide-border">
                 <div className="flex justify-between py-2.5">
                   <dt>Senin - Kamis</dt>
                   <dd>08.00 - 16.00 WITA</dd>
@@ -304,12 +272,12 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
               </dl>
             </div>
             <div>
-              <h2 className="font-display text-2xl text-[#1C2B45] mb-5">Kontak</h2>
-              <p className="font-body text-sm text-[#3A362E] leading-relaxed">
+              <h2 className="text-2xl font-bold text-foreground mb-5">Kontak</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Dinas Komunikasi, Informatika, Statistik dan Persandian<br />
                 Kabupaten Sumbawa
               </p>
-              <p className="font-body text-sm text-[#3A362E] mt-3 leading-relaxed">
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
                 Pertanyaan seputar pengajuan dapat disampaikan melalui admin
                 yang tertera setelah formulir dikirim.
               </p>
@@ -318,8 +286,8 @@ export default function LandingPage({ onAjukan, layanan = defaultLayanan, layana
         </section>
       </main>
 
-      <footer className="border-t border-[#1C2B45]/15 font-body">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-[#6B6355] flex flex-col sm:flex-row justify-between gap-2">
+      <footer className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-muted-foreground flex flex-col sm:flex-row justify-between gap-2">
           <span>Diskominfotik Kabupaten Sumbawa</span>
           <span>Layanan reservasi & bantuan instansi</span>
         </div>
