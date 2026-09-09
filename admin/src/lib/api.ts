@@ -185,3 +185,17 @@ export async function updateInstansi(id: string, data: { nama?: string }): Promi
 export async function deleteInstansi(id: string): Promise<void> {
   await request<void>(`/api/instansi/${id}`, { method: 'DELETE' })
 }
+
+export async function fetchPdf(file: string): Promise<Blob> {
+  const token = await getToken()
+  if (!token) throw new UnauthorizedError('Tidak ada sesi')
+  const res = await fetch(`${API}/uploads/${file}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 401) {
+    redirectToLogin()
+    throw new UnauthorizedError(res.statusText)
+  }
+  if (!res.ok) throw new Error(`Gagal memuat PDF (${res.status})`)
+  return res.blob()
+}

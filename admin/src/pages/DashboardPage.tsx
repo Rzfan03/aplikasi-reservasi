@@ -19,9 +19,8 @@ import {
 import StatusBadge from '@/components/StatusBadge'
 import KpiCard from '@/components/KpiCard'
 import SectionCards from '@/components/SectionCards'
-import StatusChart from '@/components/StatusChart'
 import ActivityAreaChart from '@/components/ActivityAreaChart'
-import WattVisionAlert from '@/components/WattVisionAlert'
+import UserAvatar from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { fetchStats, fetchRequestsPaged, fetchWeekly, getToken, sseUrl } from '@/lib/api'
 import { type RequestData, type StatsData } from '@/lib/types'
@@ -111,9 +110,6 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const { user } = useSessionCtx()
 
-  const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-    : user?.email?.[0]?.toUpperCase() ?? '?'
   const firstName = user?.name?.split(' ')[0] ?? 'Admin'
 
   const loadStats = useCallback(async () => {
@@ -137,9 +133,8 @@ export default function DashboardPage() {
   useEffect(() => {
     loadStats()
 
-    const callbacks = { onCreated: loadStats, onStatusChanged: loadStats }
+    const callbacks = { onRefresh: loadStats }
     const refs = { current: callbacks }
-    refs.current = callbacks
 
     let es: EventSource | null = null
     let retryTimer: ReturnType<typeof setTimeout> | null = null
@@ -163,7 +158,6 @@ export default function DashboardPage() {
                   createdAt: new Date().toISOString(),
                   requestId: data.id,
                 })
-                refs.current.onCreated()
               }
               if (data.type === 'status_changed') {
                 addNotif({
@@ -173,8 +167,33 @@ export default function DashboardPage() {
                   createdAt: new Date().toISOString(),
                   requestId: data.id,
                 })
-                refs.current.onStatusChanged()
               }
+              if (data.type === 'bulk_status_changed') {
+                addNotif({
+                  id: crypto.randomUUID(),
+                  title: 'Status Diperbarui',
+                  message: `${data.count} permohonan ${data.status === 'APPROVED' ? 'disetujui' : 'ditolak'}`,
+                  createdAt: new Date().toISOString(),
+                })
+              }
+              if (data.type === 'request_deleted') {
+                addNotif({
+                  id: crypto.randomUUID(),
+                  title: 'Permohonan Dihapus',
+                  message: 'Permohonan telah dihapus',
+                  createdAt: new Date().toISOString(),
+                  requestId: data.id,
+                })
+              }
+              if (data.type === 'bulk_request_deleted') {
+                addNotif({
+                  id: crypto.randomUUID(),
+                  title: 'Permohonan Dihapus',
+                  message: `${data.count} permohonan dihapus`,
+                  createdAt: new Date().toISOString(),
+                })
+              }
+              refs.current.onRefresh()
             } catch {}
           }
 
@@ -247,9 +266,7 @@ export default function DashboardPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary text-sm ring-1 ring-border">
-            {initials}
-          </div>
+          <UserAvatar name={user?.name} email={user?.email} className="size-11 text-sm ring-1 ring-border" />
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{greeting()}, {firstName}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">{formatDateHeader()}</p>
@@ -263,15 +280,6 @@ export default function DashboardPage() {
           <span className="hidden sm:inline">Perbarui</span>
         </button>
       </div>
-
-      {/* ── Alert ── */}
-      {!loading && (stats?.pending ?? 0) > 0 && (
-        <WattVisionAlert
-          variant="warning"
-          title={`${stats!.pending} permohonan menunggu tindakan`}
-          message="Segera tinjau dan proses permohonan yang belum ditindaklanjuti."
-        />
-      )}
 
       {/* ── 4 Weekly Summary Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -319,32 +327,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Sidebar — 4 kolom: Status chart + Perlu Tindakan */}
+        {/* Sidebar — 4 kolom: Perlu Tindakan */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-
-          {/* Status donut */}
-          {loading ? (
-            <div className="rounded-md border border-border bg-card p-6">
-              <div className="h-4 w-32 bg-primary/15 animate-pulse rounded mb-4" />
-              <div className="flex justify-center mb-4">
-                <div className="size-28 rounded-full bg-primary/15 animate-pulse" />
-              </div>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="space-y-1.5">
-                    <div className="h-3 w-full bg-primary/15 animate-pulse rounded" />
-                    <div className="h-2 w-full bg-primary/15 animate-pulse rounded" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : stats ? (
-            <StatusChart
-              pending={stats.pending}
-              approved={stats.approved}
-              rejected={stats.rejected}
-            />
-          ) : null}
 
           {/* Perlu Tindakan */}
           <div className="rounded-md border border-border bg-card overflow-hidden flex-1">
