@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import heroImg from "../assets/hero.png";
+import formBg from "../assets/form-bg.jpg";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -132,16 +132,11 @@ export default function AjukanPage() {
       <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImg})` }}
+          style={{ backgroundImage: `url(${formBg})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/50" />
 
         <div className="relative z-10 max-w-sm text-center">
-          {/* Seal */}
-          <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full border-2 border-white/25 bg-white/10 backdrop-blur-sm">
-            <span className="text-2xl font-bold text-white tracking-tight">KS</span>
-          </div>
-
           <h1 className="text-2xl font-bold text-white mb-1">Diskominfotik</h1>
           <p className="text-sm text-white/70 mb-8">Kabupaten Sumbawa</p>
 
@@ -177,9 +172,6 @@ export default function AjukanPage() {
 
           {/* Mobile header */}
           <div className="lg:hidden mb-6">
-            <div className="flex size-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 mb-3">
-              <span className="text-lg font-bold text-primary">KS</span>
-            </div>
             <h1 className="text-xl font-bold text-foreground">Ajukan Layanan</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Isi formulir untuk mengajukan permohonan.
