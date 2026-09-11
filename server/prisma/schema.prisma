@@ -51,3 +51,8 @@ model Admin {
   id    String @id @default(cuid())
   email String @unique
 }
+
+model Setting {
+  key   String @id
+  value String
+}

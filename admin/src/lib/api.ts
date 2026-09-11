@@ -199,3 +199,66 @@ export async function fetchPdf(file: string): Promise<Blob> {
   if (!res.ok) throw new Error(`Gagal memuat PDF (${res.status})`)
   return res.blob()
 }
+
+export interface SmtpSettings {
+  host: string
+  port: number
+  secure: boolean
+  user: string
+  from: string
+  hasPass: boolean
+}
+
+export async function fetchSmtp(): Promise<SmtpSettings> {
+  return request<SmtpSettings>('/api/settings/smtp')
+}
+
+export async function saveSmtp(data: {
+  host: string
+  port: number
+  secure: boolean
+  user: string
+  from: string
+  pass?: string
+}): Promise<SmtpSettings> {
+  return request<SmtpSettings>('/api/settings/smtp', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function testSmtp(to: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/settings/smtp/test', {
+    method: 'POST',
+    body: JSON.stringify({ to }),
+  })
+}
+
+export type EmailBlock =
+  | { t: 'header'; title: string; subtitle: string; color?: string; textColor?: string }
+  | { t: 'greeting' }
+  | { t: 'heading'; text: string; color?: string }
+  | { t: 'text'; text: string; color?: string }
+  | { t: 'badge' }
+  | { t: 'summary' }
+  | { t: 'button'; label: string; color?: string; textColor?: string }
+  | { t: 'divider' }
+  | { t: 'footer'; note: string; sign: string; color?: string }
+
+export interface EmailTemplate {
+  subject: string
+  content: string
+  layout: EmailBlock[] | null
+  defaults: { subject: string; content: string; layout: EmailBlock[] }
+}
+
+export async function fetchEmailTemplate(): Promise<EmailTemplate> {
+  return request<EmailTemplate>('/api/settings/email-template')
+}
+
+export async function saveEmailTemplate(subject: string, layout: EmailBlock[]): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/settings/email-template', {
+    method: 'PUT',
+    body: JSON.stringify({ subject, layout }),
+  })
+}

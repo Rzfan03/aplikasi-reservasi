@@ -9,6 +9,8 @@ import {
   Building2,
   ChevronsUpDown,
   LogOut,
+  Mail,
+  FileCode2,
   User,
 } from 'lucide-react'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
@@ -57,6 +59,8 @@ const NAV_GROUPS = [
     items: [
       { title: 'Notifikasi', url: '/notifikasi', icon: Bell, showBadge: true },
       { title: 'Pengaturan', url: '/pengaturan', icon: Settings },
+      { title: 'Template Email', url: '/email-template', icon: FileCode2 },
+      { title: 'SMTP Email', url: '/smtp', icon: Mail },
     ],
   },
 ]
@@ -80,7 +84,7 @@ export default function AppSidebar({ user, onSignOut }: Props) {
         {!isCollapsed && (
           <div className="flex flex-col min-w-0">
             <span className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">{BRAND.nama}</span>
-            <span className="truncate text-[10px] text-sidebar-foreground/60 leading-tight">{BRAND.instansi}</span>
+            <span className="truncate text-[10px] leading-tight text-sidebar-foreground/60">{BRAND.instansi}</span>
           </div>
         )}
       </SidebarHeader>
@@ -95,9 +99,10 @@ export default function AppSidebar({ user, onSignOut }: Props) {
               <SidebarMenu className="gap-0.5">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
+<SidebarMenuButton
                       asChild
                       size="lg"
+                      tooltip={item.title}
                       className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium h-9 px-2.5"
                     >
                       <NavLink
@@ -108,7 +113,7 @@ export default function AppSidebar({ user, onSignOut }: Props) {
                                 ? 'bg-primary/10 text-primary font-medium'
                                 : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
                             }`
-                        }
+                          }
                       >
                         <item.icon className="size-4 shrink-0" />
                         <span className="flex-1 truncate text-sm">{item.title}</span>
@@ -148,9 +153,9 @@ export default function AppSidebar({ user, onSignOut }: Props) {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 className="w-56 rounded-md border-border bg-card"
-                side="right"
-                align="start"
-                sideOffset={8}
+                side="bottom"
+                align="end"
+                sideOffset={6}
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2.5 px-2 py-2 text-sm">

@@ -11,6 +11,8 @@ import PermohonanPage from './pages/PermohonanPage'
 import PermohonanDetailPage from './pages/PermohonanDetailPage'
 import NotifPage from './pages/NotifPage'
 import PengaturanPage from './pages/PengaturanPage'
+import SmtpPage from './pages/SmtpPage'
+import EmailTemplatePage from './pages/EmailTemplatePage'
 import TestNotifPage from './pages/TestNotifPage'
 import TestPermohonanPage from './pages/TestPermohonanPage'
 import { SessionProvider, useSessionCtx } from './lib/SessionProvider'
@@ -54,6 +56,8 @@ function AdminLayout() {
                 <Route path="permohonan/:id" element={<PermohonanDetailPage />} />
                 <Route path="notifikasi" element={<NotifPage />} />
                 <Route path="pengaturan" element={<PengaturanPage />} />
+                <Route path="smtp" element={<SmtpPage />} />
+                <Route path="email-template" element={<EmailTemplatePage />} />
                 <Route path="test-notif" element={<TestNotifPage />} />
                 <Route path="test-permohonan" element={<TestPermohonanPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

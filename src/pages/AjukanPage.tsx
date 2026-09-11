@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import formBg from "../assets/form-bg.jpg";
 import { useReveal } from "../hooks/useReveal";
+import { LuCheck as CheckIcon, LuCloudUpload as UploadIcon } from "react-icons/lu";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -40,24 +41,6 @@ const inputClass =
 
 const inputErrorClass =
   "w-full rounded border border-destructive bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-destructive focus:ring-[3px] focus:ring-destructive/30 outline-none transition-colors mt-1.5";
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function UploadIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
 
 function Spinner() {
   return (

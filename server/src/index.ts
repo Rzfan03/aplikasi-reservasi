@@ -6,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { requestsRouter } from './routes/requests.js'
 import { layananRouter, instansiRouter } from './routes/layanan.js'
+import { settingsRouter } from './routes/settings.js'
 import { uploadsDir } from './upload.js'
 import { requireAdmin } from './middleware/requireAdmin.js'
 import { subscribe } from './sse.js'
@@ -60,6 +61,7 @@ app.get('/api/public/layanan', wrap(async (_req, res) => {
 app.use('/api/requests', requestsRouter)
 app.use('/api/layanan', layananRouter)
 app.use('/api/instansi', instansiRouter)
+app.use('/api/settings', settingsRouter)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {

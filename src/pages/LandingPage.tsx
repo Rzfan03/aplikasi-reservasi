@@ -1,136 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function FileIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function BadgeCheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-
-function RoomIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="4" y="3" width="16" height="18" rx="1" />
-      <line x1="10" y1="3" x2="10" y2="21" />
-      <line x1="8" y1="7" x2="8" y2="7" />
-      <line x1="8" y1="11" x2="8" y2="11" />
-    </svg>
-  );
-}
-
-function WrenchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-    </svg>
-  );
-}
-
-function LifeBuoyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="4" />
-      <line x1="4.93" y1="4.93" x2="9.17" y2="9.17" />
-      <line x1="14.83" y1="14.83" x2="19.07" y2="19.07" />
-      <line x1="14.83" y1="9.17" x2="19.07" y2="4.93" />
-      <line x1="4.93" y1="19.07" x2="9.17" y2="14.83" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-function BuildingIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="4" y="2" width="16" height="20" rx="1" />
-      <path d="M9 2v4M15 2v4M9 22v-4h6v4" />
-      <line x1="8" y1="11" x2="8" y2="11" />
-      <line x1="12" y1="11" x2="12" y2="11" />
-      <line x1="16" y1="11" x2="16" y2="11" />
-      <line x1="8" y1="15" x2="8" y2="15" />
-      <line x1="12" y1="15" x2="12" y2="15" />
-      <line x1="16" y1="15" x2="16" y2="15" />
-    </svg>
-  );
-}
-
-function LandmarkIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="3" y1="22" x2="21" y2="22" />
-      <line x1="6" y1="18" x2="6" y2="11" />
-      <line x1="10" y1="18" x2="10" y2="11" />
-      <line x1="14" y1="18" x2="14" y2="11" />
-      <line x1="18" y1="18" x2="18" y2="11" />
-      <polygon points="12 2 20 7 4 7" />
-    </svg>
-  );
-}
-
-function MapPinIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-
-function MailIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <polyline points="22 6 12 13 2 6" />
-    </svg>
-  );
-}
-
-function PhoneIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-    </svg>
-  );
-}
+import formBg from "../assets/form-bg.jpg";
+import {
+  LuArrowRight as ArrowRightIcon,
+  LuBadgeCheck as BadgeCheckIcon,
+  LuBuilding as BuildingIcon,
+  LuBuilding2 as RoomIcon,
+  LuCalendar as CalendarIcon,
+  LuCheck as CheckIcon,
+  LuChevronDown as ChevronDownIcon,
+  LuFileText as FileIcon,
+  LuLandmark as LandmarkIcon,
+  LuLifeBuoy as LifeBuoyIcon,
+  LuMail as MailIcon,
+  LuMapPin as MapPinIcon,
+  LuPhone as PhoneIcon,
+  LuWrench as WrenchIcon,
+} from "react-icons/lu";
 
 const services = [
   {
@@ -214,82 +100,76 @@ export default function LandingPage() {
       </a>
 
       <main id="main-content">
-{/* Hero */}
-          <section className="relative overflow-hidden max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-20 sm:pt-16 sm:pb-28 md:pt-24 md:pb-36 text-center">
-            {/* dekorasi latar (flat, tanpa gradient) */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none">
-              <span className="absolute -top-24 -left-24 size-72 rounded-full bg-primary/5" />
-              <span className="absolute top-1/3 -right-28 size-64 rounded-full border border-primary/10" />
-              <span className="absolute top-10 right-[14%] size-3 rotate-12 rounded-[2px] bg-primary/20" />
-              <span className="absolute bottom-24 left-[9%] size-2 rounded-full bg-primary/25" />
-              <span className="absolute bottom-20 right-[8%] size-4 rounded-full border border-primary/15" />
-              <span className="absolute inset-x-0 bottom-0 block h-20 sm:h-28 overflow-hidden">
-                <svg className="wave wave-1 absolute left-0 bottom-0 h-16 w-[200%] text-primary/25 sm:h-20" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor">
-                  <path d="M0,120 C150,60 150,180 300,120 C450,60 450,180 600,120 C750,60 750,180 900,120 C1050,60 1050,180 1200,120 L1200,200 L0,200 Z" />
-                </svg>
-                <svg className="wave wave-2 absolute left-0 bottom-0 h-20 w-[200%] text-primary/15 sm:h-24" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor">
-                  <path d="M0,120 C150,60 150,180 300,120 C450,60 450,180 600,120 C750,60 750,180 900,120 C1050,60 1050,180 1200,120 L1200,200 L0,200 Z" />
-                </svg>
-                <svg className="wave wave-3 absolute left-0 bottom-0 h-24 w-[200%] text-primary/10 sm:h-28" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor">
-                  <path d="M0,120 C150,60 150,180 300,120 C450,60 450,180 600,120 C750,60 750,180 900,120 C1050,60 1050,180 1200,120 L1200,200 L0,200 Z" />
-                </svg>
-              </span>
-            </div>
+        {/* Hero */}
+        <section className="relative overflow-hidden flex min-h-[calc(100vh-4rem)] items-center py-16 text-center sm:py-20">
+          {/* dekorasi latar meluas ke seluruh viewport (flat, tanpa gradient) */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none">
+            <span className="absolute -top-24 -left-24 size-72 rounded-full bg-primary/5" />
+            <span className="absolute top-1/3 -right-28 size-64 rounded-full border border-primary/10" />
+            <span className="absolute top-10 right-[14%] size-3 rotate-12 rounded-[2px] bg-primary/20" />
+            <span className="absolute bottom-24 left-[9%] size-2 rounded-full bg-primary/25" />
+            <span className="absolute bottom-20 right-[8%] size-4 rounded-full border border-primary/15" />
+            <span className="absolute inset-x-0 bottom-0 block h-56 overflow-hidden sm:h-80" style={{ isolation: "isolate" }}>
+              <svg className="wave wave-1 absolute bottom-0 left-0 h-44 w-[200%] text-primary/25 sm:h-60" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor">
+                <path d="M0,120 C150,60 150,180 300,120 C450,60 450,180 600,120 C750,60 750,180 900,120 C1050,60 1050,180 1200,120 L1200,200 L0,200 Z" />
+              </svg>
+              <svg className="wave wave-2 absolute bottom-0 left-0 h-52 w-[200%] text-primary/15 sm:h-72" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor">
+                <path d="M0,120 C150,60 150,180 300,120 C450,60 450,180 600,120 C750,60 750,180 900,120 C1050,60 1050,180 1200,120 L1200,200 L0,200 Z" />
+              </svg>
+              <svg className="wave wave-3 absolute bottom-0 left-0 h-60 w-[200%] text-primary/10 sm:h-80" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="currentColor">
+                <path d="M0,120 C150,60 150,180 300,120 C450,60 450,180 600,120 C750,60 750,180 900,120 C1050,60 1050,180 1200,120 L1200,200 L0,200 Z" />
+              </svg>
+            </span>
+          </div>
 
-            <div className="relative">
-              <h1 data-reveal className="font-display font-light text-[2.25rem] leading-[1.1] tracking-tight text-foreground max-w-3xl mx-auto sm:text-5xl md:text-[4.25rem]">
-                Ajukan layanan Kominfo tanpa antre ke kantor.
-              </h1>
-              <p data-reveal className="text-muted-foreground mt-5 max-w-xl mx-auto leading-relaxed text-base sm:text-lg">
-                Instansi di Kabupaten Sumbawa dapat mengajukan peminjaman ruang rapat, alat,
-                dan bantuan teknis langsung dari sini. Cukup isi formulir — tidak perlu membuat akun.
-              </p>
+          <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6">
+            <h1 data-reveal className="font-display font-light text-[2.25rem] leading-[1.1] tracking-tight text-foreground max-w-3xl mx-auto sm:text-5xl md:text-[4.25rem]">
+              Ajukan layanan Kominfo tanpa antre ke kantor.
+            </h1>
+            <p data-reveal className="text-muted-foreground mt-5 max-w-xl mx-auto leading-relaxed text-base sm:text-lg">
+              Instansi di Kabupaten Sumbawa dapat mengajukan peminjaman ruang rapat, alat,
+              dan bantuan teknis langsung dari sini. Cukup isi formulir — tidak perlu membuat akun.
+            </p>
 
-              <div data-reveal className="flex flex-wrap justify-center gap-3 mt-8">
-                <button
-                  onClick={() => navigate("/ajukan")}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm rounded font-semibold transition-colors duration-200 hover:bg-primary-dim"
-                >
-                  Ajukan sekarang
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-                <a
-                  href="#cara"
-                  className="px-6 py-3 border border-border bg-card text-foreground text-sm rounded font-medium transition-colors duration-200 hover:border-primary hover:bg-primary/5 hover:text-primary"
-                >
-                  Lihat cara mengajukan
-                </a>
-              </div>
-
-              <a
-                data-reveal
-                href="/status"
-                onClick={(e) => { e.preventDefault(); navigate("/status"); }}
-                className="inline-flex items-center gap-1.5 mt-6 text-sm font-medium text-primary hover:text-primary-dim transition-colors duration-200"
+            <div data-reveal className="flex flex-wrap justify-center gap-3 mt-8">
+              <button
+                onClick={() => navigate("/ajukan")}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm rounded font-semibold transition-colors duration-200 hover:bg-primary-dim"
               >
-                Sudah mengajukan? Cek status permohonan
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
+                Ajukan sekarang
+                <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+              </button>
+              <a
+                href="#cara"
+                className="px-6 py-3 border border-border bg-card text-foreground text-sm rounded font-medium transition-colors duration-200 hover:border-primary hover:bg-primary/5 hover:text-primary"
+              >
+                Lihat cara mengajukan
               </a>
-
-              <ul data-reveal className="mt-12 flex flex-wrap justify-center gap-3">
-                {trustPoints.map((p) => (
-                  <li key={p.label} className="flex items-center gap-2 rounded border border-border bg-card px-3.5 py-1.5 text-sm text-muted-foreground">
-                    <CheckIcon className="size-4 text-success shrink-0" />
-                    <span>{p.label}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
-          </section>
+
+            <a
+              data-reveal
+              href="/status"
+              onClick={(e) => { e.preventDefault(); navigate("/status"); }}
+              className="inline-flex items-center gap-1.5 mt-6 text-sm font-medium text-primary hover:text-primary-dim transition-colors duration-200"
+            >
+              Sudah mengajukan? Cek status permohonan
+              <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+            </a>
+
+            <ul data-reveal className="mt-12 flex flex-wrap justify-center gap-3">
+              {trustPoints.map((p) => (
+                <li key={p.label} className="flex items-center gap-2 rounded border border-border bg-card px-3.5 py-1.5 text-sm text-muted-foreground">
+                  <CheckIcon className="size-4 text-success shrink-0" aria-hidden="true" />
+                  <span>{p.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
         {/* Marquee ikon instansi */}
-        <section aria-label="Layanan untuk instansi di lingkungan Pemkab Sumbawa" data-reveal className="border-y border-border bg-muted py-5 overflow-hidden">
+        <section aria-label="Layanan untuk instansi di lingkungan Pemkab Sumbawa" data-reveal className="overflow-hidden border-y border-border bg-muted py-5">
           <div className="marquee-track flex w-max items-center gap-10" role="presentation" aria-hidden="true">
             {[0, 1].map((copy) => (
               <div key={copy} className="flex items-center gap-10">
@@ -323,7 +203,7 @@ export default function LandingPage() {
               {services.map((s) => (
                 <div key={s.title} data-reveal className="rounded border border-border bg-card p-6 transition-colors duration-200 hover:border-primary/40 hover:bg-primary/5">
                   <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary mb-5">
-                    <s.icon className="size-5" />
+                    <s.icon className="size-5" aria-hidden="true" />
                   </span>
                   <h3 className="font-display text-lg font-normal text-foreground mb-1.5">{s.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
@@ -350,7 +230,7 @@ export default function LandingPage() {
                 <div key={s.title} data-reveal className="group rounded border border-border bg-card p-6 transition-colors duration-200 hover:border-primary/40 hover:bg-primary/5">
                   <div className="flex items-center justify-between mb-5">
                     <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-200 group-hover:bg-primary/15">
-                      <s.icon className="size-5" />
+                      <s.icon className="size-5" aria-hidden="true" />
                     </span>
                     <span className="flex size-8 items-center justify-center rounded-full border border-border text-sm font-medium text-muted-foreground transition-colors duration-200 group-hover:border-primary/40 group-hover:text-primary" aria-hidden="true">
                       {i + 1}
@@ -365,8 +245,14 @@ export default function LandingPage() {
         </section>
 
         {/* Untuk siapa */}
-        <section className="bg-accent">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+        <section className="bg-accent relative overflow-hidden">
+          <img
+            src={formBg}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-15"
+          />
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
             <div className="max-w-xl" data-reveal>
               <span className="mb-4 block h-1 w-10 rounded-full bg-primary" aria-hidden="true" />
               <h2 className="font-display font-light text-2xl tracking-tight text-white sm:text-3xl">Untuk instansi di Kabupaten Sumbawa</h2>
@@ -381,10 +267,7 @@ export default function LandingPage() {
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary text-primary-foreground text-sm rounded font-semibold transition-colors duration-200 hover:bg-primary-dim"
                 >
                   Mulai ajukan sekarang
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
+                  <ArrowRightIcon className="size-3.5" aria-hidden="true" />
                 </a>
               </div>
             </div>
@@ -393,7 +276,7 @@ export default function LandingPage() {
               {audience.map((a) => (
                 <li key={a} className="flex items-start gap-3 text-sm text-white/85">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-white/15">
-                    <CheckIcon className="size-3 text-white" />
+                    <CheckIcon className="size-3 text-white" aria-hidden="true" />
                   </span>
                   {a}
                 </li>
@@ -416,7 +299,7 @@ export default function LandingPage() {
                   <summary className="flex cursor-pointer items-center justify-between gap-4 text-[15px] font-medium text-foreground list-none [&::-webkit-details-marker]:hidden">
                     {f.q}
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border transition-colors duration-200 group-open:border-primary group-open:text-primary">
-                      <ChevronDownIcon className="size-4 transition-transform duration-300 group-open:rotate-180" />
+                      <ChevronDownIcon className="size-4 transition-transform duration-300 group-open:rotate-180" aria-hidden="true" />
                     </span>
                   </summary>
                   <div className="faq-answer">
@@ -454,18 +337,18 @@ export default function LandingPage() {
             <h3 className="font-display font-medium text-base text-white mb-4">Kontak</h3>
             <ul className="space-y-2.5">
               <li className="flex items-start gap-2.5 text-white/70">
-                <MapPinIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                <MapPinIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>Dinas Komunikasi, Informatika, Statistik dan Persandian, Uma Sima, Sumbawa</span>
               </li>
               <li>
                 <a href="tel:+6237121582" className="flex items-start gap-2.5 text-white/70 transition-colors duration-200 hover:text-white">
-                  <PhoneIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <PhoneIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                   (0371) 21582
                 </a>
               </li>
               <li>
                 <a href="mailto:diskominfotik@sumbawakab.go.id" className="flex items-start gap-2.5 text-white/70 transition-colors duration-200 hover:text-white">
-                  <MailIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <MailIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                   diskominfotik@sumbawakab.go.id
                 </a>
               </li>
@@ -479,7 +362,7 @@ export default function LandingPage() {
           <div data-reveal>
             <h3 className="font-display font-medium text-base text-white mb-4">Lokasi</h3>
             <p className="text-white/70 leading-relaxed flex items-start gap-2.5">
-              <MapPinIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+              <MapPinIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
               <span>
                 GC69+7RW, Uma Sima, Sumbawa,<br />
                 Kabupaten Sumbawa, NTB 84313
@@ -500,10 +383,7 @@ export default function LandingPage() {
               className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded bg-primary text-primary-foreground text-sm font-semibold transition-colors duration-200 hover:bg-primary-dim"
             >
               Lihat di peta
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
+              <ArrowRightIcon className="size-3.5" aria-hidden="true" />
             </a>
           </div>
         </div>

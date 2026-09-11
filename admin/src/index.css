@@ -28,14 +28,14 @@
   --border: #e4e4e7;
   --input: #f4f4f5;
   --ring: #4945ff;
-  /* sidebar — ikut warna background dashboard */
-  --sidebar-bg: #ffffff;
-  --sidebar-foreground: #000000;
+  /* sidebar — tetap gelap dengan teks terang, apa pun tema/palet */
+  --sidebar-bg: #18181b;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: #4945ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(73, 69, 255, 0.12);
-  --sidebar-accent-foreground: #000000;
-  --sidebar-border: #e4e4e7;
+  --sidebar-accent: rgba(73, 69, 255, 0.2);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #3f3f46;
 
   --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -196,6 +196,9 @@ html[data-palette="putih"] {
   border-radius: var(--radius) !important;
   font-family: var(--font-sans) !important;
   font-size: 0.875rem !important;
+}
+.swal-theme .swal2-actions {
+  gap: 0.75rem;
 }
 
 @layer base {
