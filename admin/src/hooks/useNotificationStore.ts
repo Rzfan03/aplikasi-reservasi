@@ -18,7 +18,16 @@ export const useNotificationStore = create<NotifState>()(
       items: [],
       unread: 0,
       add: (item) => {
-        set((s) => ({ items: [{ ...item, read: false }, ...s.items].slice(0, 50), unread: s.unread + 1 }))
+        set((s) => {
+          if (
+            item.title === 'Permohonan Baru' &&
+            item.requestId &&
+            s.items.some((i) => i.title === 'Permohonan Baru' && i.requestId === item.requestId)
+          ) {
+            return s
+          }
+          return { items: [{ ...item, read: false }, ...s.items].slice(0, 50), unread: s.unread + 1 }
+        })
       },
       markRead: (id) =>
         set((s) => {

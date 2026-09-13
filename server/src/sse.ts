@@ -7,6 +7,7 @@ type Client = {
 }
 
 const clients = new Set<Client>()
+const logClients = new Set<Client>()
 
 export function subscribe(res: Response) {
   const client: Client = { id: randomUUID(), res }
@@ -14,9 +15,22 @@ export function subscribe(res: Response) {
   res.on('close', () => clients.delete(client))
 }
 
+export function subscribeLogs(res: Response) {
+  const client: Client = { id: randomUUID(), res }
+  logClients.add(client)
+  res.on('close', () => logClients.delete(client))
+}
+
 export function broadcast(data: unknown) {
   const payload = `data: ${JSON.stringify(data)}\n\n`
   for (const client of clients) {
+    client.res.write(payload)
+  }
+}
+
+export function broadcastLog(data: unknown) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`
+  for (const client of logClients) {
     client.res.write(payload)
   }
 }

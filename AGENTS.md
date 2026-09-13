@@ -71,6 +71,13 @@ Sistem: Notifikasi (badge), Pengaturan
 ### Port Conflicts
 - Use `lsof -ti tcp:$port` (not `pkill -f`) to check/kill processes
 
+### WhatsApp (Baileys)
+- `server/src/whatsapp.ts` + `admin/src/pages/WhatsAppPage.tsx`. Session files in `server/data/wa-session` — **never commit** (`.gitignore` covers `server/data/`).
+- Pairing **and every send** require network that allows `wss://web.whatsapp.com` (HTTPS alone is not enough). Blocked network → WebSocket close 1006. Use phone hotspot / data seluler if the office network blocks it.
+- On unexpected socket close (non-logout) the module auto-reconnects with backoff (3s→30s) while the feature is enabled.
+- `state.lastSendError`/`lastSendAt` track the most recent send attempt (shown in WhatsAppPage); `sendWhatsApp` failures are warn-only (auto flow), `sendTestWhatsApp` throws (manual flow, route returns 4xx).
+- Auto-send is fire-and-forget from `routes/requests.ts`; email is the reliable fallback channel. Server times are rendered as WITA (see `TZ` in `start.sh`).
+
 ### Prisma
 - After schema change: `npx prisma generate`
 - `DATABASE_URL_UNPOOLED` for direct connection, `DATABASE_URL` for pooled

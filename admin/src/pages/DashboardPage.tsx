@@ -126,6 +126,29 @@ export default function DashboardPage() {
     setLoading(false)
   }, [])
 
+  const backfillNotifications = useCallback(async () => {
+    try {
+      const res = await fetchRequestsPaged({ status: 'PENDING', limit: 50 })
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000
+      const seen = new Set(
+        useNotificationStore.getState().items.map((i) => i.requestId).filter((id): id is string => !!id),
+      )
+      for (const r of res.data) {
+        if (seen.has(r.id)) continue
+        const created = new Date(r.createdAt).getTime()
+        if (Number.isNaN(created) || created < cutoff) continue
+        seen.add(r.id)
+        addNotif({
+          id: crypto.randomUUID(),
+          title: 'Permohonan Baru',
+          message: `${r.nama} dari ${r.instansi}`,
+          createdAt: r.createdAt,
+          requestId: r.id,
+        })
+      }
+    } catch {}
+  }, [addNotif])
+
   useEffect(() => {
     if (loading || stats) return
     const timer = setTimeout(() => {
@@ -136,6 +159,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadStats()
+    void backfillNotifications()
 
     const callbacks = { onRefresh: loadStats }
     const refs = { current: callbacks }
@@ -143,11 +167,13 @@ export default function DashboardPage() {
     let es: EventSource | null = null
     let retryTimer: ReturnType<typeof setTimeout> | null = null
     let retries = 0
-    const MAX_RETRIES = 5
+    let gen = 0
 
     function connect() {
+      const g = ++gen
       getToken()
         .then((token) => {
+          if (g !== gen) return
           const url = `${sseUrl()}?token=${token}`
           es = new EventSource(url)
 
@@ -204,11 +230,10 @@ export default function DashboardPage() {
           es.onerror = () => {
             es?.close()
             es = null
+            if (g !== gen) return
             retries++
-            if (retries < MAX_RETRIES) {
-              const delay = Math.min(3000 * retries, 30000)
-              retryTimer = setTimeout(connect, delay)
-            }
+            const delay = Math.min(3000 * retries, 30000)
+            retryTimer = setTimeout(connect, delay)
           }
 
           retries = 0
@@ -219,10 +244,11 @@ export default function DashboardPage() {
     connect()
 
     return () => {
+      gen++
       es?.close()
       if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [loadStats, addNotif])
+  }, [loadStats, addNotif, backfillNotifications])
 
   const weeklyTotal = weeklyData.reduce((s, d) => s + d.count, 0)
   const weeklyAvg = weeklyData.length ? Math.round(weeklyTotal / weeklyData.length) : 0

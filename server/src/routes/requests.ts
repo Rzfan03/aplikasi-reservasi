@@ -250,8 +250,12 @@ requestsRouter.put('/:id/status', requireAdmin, wrap(async (req, res) => {
     },
   })
   if (updated.email) {
-    sendStatusEmail({ to: updated.email, nama: updated.nama, instansi: updated.instansi, layanan: updated.layanan, tanggal: updated.tanggal, status: updated.status, rejectReason: updated.rejectReason, statusToken: updated.statusToken })
+    sendStatusEmail({ to: updated.email, nama: updated.nama, instansi: updated.instansi, layanan: updated.layanan, tanggal: updated.tanggal, tanggalSelesai: updated.tanggalSelesai, status: updated.status, rejectReason: updated.rejectReason, statusToken: updated.statusToken })
       .catch((err) => console.error('[email] send failed:', err.message))
+  }
+  if (updated.noHp) {
+    sendWhatsApp(updated.noHp, buildStatusMessage({ nama: updated.nama, layanan: updated.layanan, status: updated.status, tanggal: updated.tanggal, tanggalSelesai: updated.tanggalSelesai, rejectReason: updated.rejectReason }))
+      .catch((err) => console.error('[whatsapp] send failed:', err.message))
   }
   broadcast({ type: 'status_changed', id: updated.id, nama: updated.nama, status: updated.status, createdAt: updated.createdAt })
   res.json(updated)
@@ -271,7 +275,7 @@ requestsRouter.put('/bulk/status', requireAdmin, wrap(async (req, res) => {
   }
   const targets = await prisma.request.findMany({
     where: { id: { in: ids } },
-    select: { id: true, email: true, nama: true, instansi: true, layanan: true, tanggal: true, statusToken: true },
+    select: { id: true, email: true, noHp: true, nama: true, instansi: true, layanan: true, tanggal: true, tanggalSelesai: true, statusToken: true },
   })
   const updated = await prisma.request.updateMany({
     where: { id: { in: ids } },
@@ -283,8 +287,12 @@ requestsRouter.put('/bulk/status', requireAdmin, wrap(async (req, res) => {
   })
   for (const t of targets) {
     if (t.email) {
-      sendStatusEmail({ to: t.email, nama: t.nama, instansi: t.instansi, layanan: t.layanan, tanggal: t.tanggal, status, rejectReason, statusToken: t.statusToken })
+      sendStatusEmail({ to: t.email, nama: t.nama, instansi: t.instansi, layanan: t.layanan, tanggal: t.tanggal, tanggalSelesai: t.tanggalSelesai, status, rejectReason, statusToken: t.statusToken })
         .catch((err) => console.error('[email] send failed:', err.message))
+    }
+    if (t.noHp) {
+      sendWhatsApp(t.noHp, buildStatusMessage({ nama: t.nama, layanan: t.layanan, status, tanggal: t.tanggal, tanggalSelesai: t.tanggalSelesai, rejectReason }))
+        .catch((err) => console.error('[whatsapp] send failed:', err.message))
     }
   }
   broadcast({ type: 'bulk_status_changed', status, count: updated.count })

@@ -10,8 +10,9 @@ import {
   ChevronsUpDown,
   LogOut,
   Mail,
-  FileCode2,
+  MessageCircle,
   User,
+  ScrollText,
 } from 'lucide-react'
 import { useNotificationStore } from '@/hooks/useNotificationStore'
 import UserAvatar from '@/components/UserAvatar'
@@ -59,8 +60,9 @@ const NAV_GROUPS = [
     items: [
       { title: 'Notifikasi', url: '/notifikasi', icon: Bell, showBadge: true },
       { title: 'Pengaturan', url: '/pengaturan', icon: Settings },
-      { title: 'Template Email', url: '/email-template', icon: FileCode2 },
       { title: 'SMTP Email', url: '/smtp', icon: Mail },
+      { title: 'WhatsApp', url: '/whatsapp', icon: MessageCircle },
+      { title: 'Log Sistem', url: '/log', icon: ScrollText },
     ],
   },
 ]

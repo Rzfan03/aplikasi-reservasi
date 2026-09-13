@@ -9,17 +9,91 @@ import { layananRouter, instansiRouter } from './routes/layanan.js'
 import { settingsRouter } from './routes/settings.js'
 import { uploadsDir } from './upload.js'
 import { requireAdmin } from './middleware/requireAdmin.js'
-import { subscribe } from './sse.js'
+import { subscribe, subscribeLogs, broadcastLog } from './sse.js'
 import { isPrismaError, wrap } from './wrap.js'
 import { prisma } from './db.js'
+import { maybeStartWhatsApp } from './whatsapp.js'
+import { installConsoleLogger, getLogs, log, setLogEmitter } from './logger.js'
+
+installConsoleLogger()
+setLogEmitter((entry) => broadcastLog({ type: 'log', entry }))
+
+process.on('unhandledRejection', (reason) => {
+  log('error', 'process', reason instanceof Error ? reason.stack ?? reason.message : String(reason))
+})
+process.on('uncaughtException', (err) => {
+  log('error', 'process', err.stack ?? err.message)
+})
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
-app.use(cors())
+app.disable('x-powered-by')
+
+// CORS allow-list — origin tak dikenal ditolak. Daftar lewat env CORS_ORIGINS.
+const allowedOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174')
+  .split(',').map((s) => s.trim()).filter(Boolean)
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) cb(null, true)
+    else cb(new Error('Origin tidak diizinkan'))
+  },
+}))
+
+// Security headers dasar. UI (vite) memakai header sendiri via server.headers.
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
+  if (_req.secure || _req.get('x-forwarded-proto') === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+  next()
+})
 app.use(express.json())
 
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') return next()
+  const t0 = performance.now()
+  res.on('finish', () => {
+    if (req.path.startsWith('/api/logs')) return
+    const redacted = req.originalUrl.replace(/([?&])token=[^&]*/g, '$1token=REDACTED')
+    log('info', 'http', `${req.method} ${redacted} ${res.statusCode} ${Math.round(performance.now() - t0)}ms`)
+  })
+  next()
+})
+
 app.get('/api/health', (_req, res) => {
+  res.json({ ok: true })
+})
+
+// Log sistem — buffer in-memory proses (server restart → buffer terisi ulang)
+app.get('/api/logs', requireAdmin, (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 200, 1000)
+  res.json({ logs: getLogs(limit) })
+})
+
+// Real-time streaming log ke halaman Log
+app.get('/api/logs/events', requireAdmin, (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  })
+  res.write(': connected\n\n')
+  subscribeLogs(res)
+  const hb = setInterval(() => res.write(': ping\n\n'), 15000)
+  req.on('close', () => clearInterval(hb))
+})
+
+// Ingest log sisi frontend (label [fe]) — error browser dikirim admin ke sini
+app.post('/api/logs/ingest', requireAdmin, (req, res) => {
+  const { level, message } = req.body ?? {}
+  const lvl = ['log', 'info', 'warn', 'error'].includes(level) ? level : 'log'
+  if (typeof message === 'string' && message) {
+    log(lvl, 'fe', message.slice(0, 2000))
+  }
   res.json({ ok: true })
 })
 
@@ -86,4 +160,5 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 const port = Number(process.env.PORT || 4000)
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)
+  maybeStartWhatsApp().catch((err) => console.error('[whatsapp] init failed:', err?.message))
 })

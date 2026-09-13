@@ -9,6 +9,9 @@ for port in 4000 5173 5174; do
 done
 sleep 1
 
+# Konsisten dengan label "WITA" pada email/WhatsApp.
+export TZ="${TZ:-Asia/Makassar}"
+
 echo "Starting API (server) on :4000..."
 (cd "$ROOT/server" && npm run dev) &
 SERVER_PID=$!

@@ -234,31 +234,90 @@ export async function testSmtp(to: string): Promise<{ ok: boolean }> {
   })
 }
 
-export type EmailBlock =
-  | { t: 'header'; title: string; subtitle: string; color?: string; textColor?: string }
-  | { t: 'greeting' }
-  | { t: 'heading'; text: string; color?: string }
-  | { t: 'text'; text: string; color?: string }
-  | { t: 'badge' }
-  | { t: 'summary' }
-  | { t: 'button'; label: string; color?: string; textColor?: string }
-  | { t: 'divider' }
-  | { t: 'footer'; note: string; sign: string; color?: string }
-
-export interface EmailTemplate {
-  subject: string
-  content: string
-  layout: EmailBlock[] | null
-  defaults: { subject: string; content: string; layout: EmailBlock[] }
+export interface WaAdminState {
+  enabled: boolean
+  pairNumber: string
+  status: {
+    connecting: boolean
+    connected: boolean
+    paired: boolean
+    meJid: string | null
+    pairCode: string | null
+    qr: string | null
+    lastError: string | null
+    lastSendError: string | null
+    lastSendAt: number | null
+  }
 }
 
-export async function fetchEmailTemplate(): Promise<EmailTemplate> {
-  return request<EmailTemplate>('/api/settings/email-template')
+export async function fetchWhatsapp(): Promise<WaAdminState> {
+  return request<WaAdminState>('/api/settings/whatsapp')
 }
 
-export async function saveEmailTemplate(subject: string, layout: EmailBlock[]): Promise<{ ok: boolean }> {
-  return request<{ ok: boolean }>('/api/settings/email-template', {
-    method: 'PUT',
-    body: JSON.stringify({ subject, layout }),
+export async function saveWhatsappEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
+  return request<{ enabled: boolean }>('/api/settings/whatsapp/enable', {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
   })
+}
+
+export async function pairWhatsapp(number: string): Promise<{ code: string | null; paired: boolean; number: string }> {
+  return request<{ code: string | null; paired: boolean; number: string }>('/api/settings/whatsapp/pair', {
+    method: 'POST',
+    body: JSON.stringify({ number }),
+  })
+}
+
+export async function logoutWhatsapp(): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/settings/whatsapp/logout', { method: 'POST' })
+}
+
+export async function testWhatsApp(to: string, text: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('/api/settings/whatsapp/test', {
+    method: 'POST',
+    body: JSON.stringify({ to, text }),
+  })
+}
+
+export type LogLevel = 'log' | 'info' | 'warn' | 'error'
+
+export interface SystemLog {
+  id: number
+  ts: number
+  level: LogLevel
+  source: string
+  message: string
+}
+
+export async function downloadAuth(path: string, filename: string): Promise<void> {
+  const token = await getToken()
+  if (!token) return
+  const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error ?? `Gagal mengunduh (${res.status})`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+}
+
+export async function fetchLogs(limit = 200): Promise<SystemLog[]> {
+  const res = await request<{ logs: SystemLog[] }>(`/api/logs?limit=${limit}`)
+  return res.logs
+}
+
+export function logsSseUrl(): string {
+  return `${API}/api/logs/events`
+}
+
+export async function ingestFeLog(level: LogLevel, message: string): Promise<void> {
+  try {
+    await fetch(`${API}/api/logs/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getToken()}` },
+      body: JSON.stringify({ level, message: message.slice(0, 2000) }),
+    })
+  } catch {}
 }
