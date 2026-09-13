@@ -12,22 +12,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequestsPaged, bulkUpdateStatus, bulkDeleteRequests, deleteRequest } from '@/lib/api'
-import { confirmDanger, toastSuccess } from '@/lib/swal'
-import { type RequestData, type Status, STATUS_LABEL } from '@/lib/types'
+import { fetchRequestsPaged, bulkUpdateStatus, bulkDeleteRequests, deleteRequest, downloadAuth } from '@/lib/api'
+import { confirmDanger, toastSuccess, toast } from '@/lib/swal'
+import { type RequestData, type Status } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 
 type Filter = Status | 'ALL'
 
-function formatTanggal(value: string) {
-  return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-function csv(rows: Record<string, string>[]) {
-  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
-  const cols = ['Nama', 'Instansi', 'NIP', 'Jabatan', 'Layanan', 'Tanggal', 'Status', 'Diajukan']
-  const lines = [cols.join(';'), ...rows.map((r) => cols.map((c) => esc(r[c] ?? '')).join(';'))]
-  return '\uFEFF' + lines.join('\n')
+function formatJadwal(r: { tanggal: string; tanggalSelesai?: string | null }) {
+  const start = new Date(r.tanggal)
+  const base = start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+  const time = (d: Date) => d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+  if (!r.tanggalSelesai) return `${base}, ${time(start)}`
+  const end = new Date(r.tanggalSelesai)
+  const sameDay = start.toDateString() === end.toDateString()
+  return sameDay
+    ? `${base}, ${time(start)}\u2013${time(end)}`
+    : `${base}, ${time(start)}\u2013${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} ${time(end)}`
 }
 
 export default function PermohonanPage() {
@@ -157,32 +158,15 @@ export default function PermohonanPage() {
   async function handleExport() {
     setExporting(true)
     try {
-      const res = await fetchRequestsPaged({
-        status: filter === 'ALL' ? undefined : (filter as Status),
-        search: search || undefined,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-        page: 1,
-        limit: 10000,
-      })
-      const rows = res.data.map((r) => ({
-        Nama: r.nama,
-        Instansi: r.instansi,
-        NIP: r.nip,
-        Jabatan: r.jabatan,
-        Layanan: r.layanan,
-        Tanggal: formatTanggal(r.tanggal),
-        Status: STATUS_LABEL[r.status],
-        Diajukan: new Date(r.createdAt).toLocaleString('id-ID'),
-      }))
-      const blob = new Blob([csv(rows)], { type: 'text/csv;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `permohonan-${new Date().toISOString().slice(0, 10)}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {} finally {
+      const qs = new URLSearchParams()
+      if (filter !== 'ALL') qs.set('status', filter)
+      if (search) qs.set('search', search)
+      if (dateFrom) qs.set('dateFrom', dateFrom)
+      if (dateTo) qs.set('dateTo', dateTo)
+      await downloadAuth(`/api/requests/export.csv?${qs.toString()}`, `rekap-permohonan-${new Date().toISOString().slice(0, 10)}.csv`)
+    } catch (e) {
+      toast.fire({ icon: 'error', title: e instanceof Error ? e.message : 'Gagal mengekspor' })
+    } finally {
       setExporting(false)
     }
   }
@@ -314,7 +298,7 @@ export default function PermohonanPage() {
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">{r.nama}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {r.instansi} · {r.layanan} · {formatTanggal(r.tanggal)}
+                      {r.instansi} · {r.layanan} · {formatJadwal(r)}
                     </p>
                   </div>
                   <StatusBadge status={r.status} />

@@ -201,9 +201,10 @@ requestsRouter.get('/weekly', requireAdmin, wrap(async (_req, res) => {
 
 // Admin: list (paged + filters)
 requestsRouter.get('/', requireAdmin, wrap(async (req, res) => {
-  const { status, dateFrom, dateTo, search, page = '1', limit = '10' } = req.query
+  const { status, dateFrom, dateTo, search, instansi, page = '1', limit = '10' } = req.query
   const where: Record<string, unknown> = {}
   if (status) where.status = status
+  if (instansi) where.instansi = instansi as string
   if (dateFrom || dateTo) {
     where.tanggal = {}
     if (dateFrom) (where.tanggal as Record<string, unknown>).gte = new Date(dateFrom as string)
@@ -402,7 +403,7 @@ requestsRouter.delete('/:id', requireAdmin, wrap(async (req, res) => {
 // User check status by token (must be last)
 requestsRouter.get('/:statusToken', wrap(async (req, res) => {
   const { statusToken } = req.params
-  if (['stats', 'weekly', 'bulk', 'admin'].includes(statusToken)) {
+  if (['stats', 'weekly', 'bulk', 'admin', 'export.csv'].includes(statusToken)) {
     res.status(404).json({ error: 'Not found' }); return
   }
   const request = await prisma.request.findUnique({
