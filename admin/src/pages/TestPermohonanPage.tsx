@@ -49,6 +49,8 @@ export default function TestPermohonanPage() {
     nama: '',
     nip: '',
     jabatan: '',
+    email: '',
+    noHp: '',
     layanan: '',
     tanggal: new Date().toISOString().slice(0, 10),
     deskripsi: 'Permohonan percobaan realtime',
@@ -83,6 +85,8 @@ export default function TestPermohonanPage() {
       nama: `${NAMES[Math.floor(Math.random() * NAMES.length)]} ${NAMES[Math.floor(Math.random() * NAMES.length)]}`,
       nip: randomNip(),
       jabatan: JABATAN[Math.floor(Math.random() * JABATAN.length)],
+      email: `${NAMES[0].toLowerCase()}.${Math.floor(Math.random() * 100)}@contoh.id`,
+      noHp: `0812${[...Array(8)].map(() => Math.floor(Math.random() * 10)).join('')}`,
       tanggal: new Date().toISOString().slice(0, 10),
     })
   }
@@ -97,6 +101,8 @@ export default function TestPermohonanPage() {
       fd.append('nama', form.nama)
       fd.append('nip', form.nip)
       fd.append('jabatan', form.jabatan)
+      fd.append('email', form.email || 'pemohon.uji@example.com')
+      fd.append('noHp', form.noHp || '081234567890')
       fd.append('layanan', form.layanan)
       fd.append('tanggal', form.tanggal)
       fd.append('deskripsi', form.deskripsi)

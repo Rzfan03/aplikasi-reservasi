@@ -8,6 +8,8 @@ export interface RequestData {
   jabatan: string
   layanan: string
   tanggal: string
+  tanggalSelesai?: string | null
+  noHp?: string | null
   deskripsi?: string | null
   pdfFile: string
   status: Status

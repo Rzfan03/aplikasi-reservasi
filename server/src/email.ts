@@ -10,6 +10,7 @@ export type StatusEmailInput = {
   instansi: string
   layanan: string
   tanggal: Date
+  tanggalSelesai?: Date | null
   status: Status
   rejectReason?: string | null
   statusToken?: string
@@ -28,53 +29,127 @@ function makeTransport(cfg: { host: string; port: number; secure: boolean; user:
 }
 
 export const DEFAULT_STATUS_TEMPLATE =
-  `<div style="background:#F3F4F2;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid #E7E5E4;border-radius:12px;overflow:hidden;">
-    <div style="background:{{tintColor}};height:6px;"></div>
-    <div style="background:#18181b;padding:28px 32px;">
-      <div style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:0.2px;">Diskominfotik Kabupaten Sumbawa</div>
-      <div style="font-size:12px;color:#a1a1aa;margin-top:3px;">Notifikasi Status Permohonan Layanan</div>
-    </div>
-    <div style="padding:28px 32px;">
-      <p style="font-size:14px;color:#52525b;margin:0 0 16px;">Yth. <strong style="color:#18181b;">{{nama}}</strong> ({{instansi}}),</p>
-      <h2 style="margin:0 0 8px;font-size:19px;color:#18181b;">{{heading}}</h2>
-      <p style="font-size:14px;color:#3f3f46;margin:0 0 0;line-height:1.55;">
-        Permohonan Anda untuk layanan "<strong style="color:#18181b;">{{layanan}}</strong>" pada tanggal
-        <strong style="color:#18181b;">{{tanggal}}</strong> telah {{kataKerja}}.
-      </p>
-      <div style="background:{{tintBg}};border:1px solid {{tintColor}}40;border-radius:8px;padding:14px 16px;margin:18px 0;">
-        <span style="display:inline-block;background:{{tintColor}};color:#ffffff;font-weight:700;font-size:12px;padding:4px 12px;border-radius:999px;letter-spacing:0.6px;">{{statusLabel}}</span>
-        {{rejectReason}}
-      </div>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 6px;">
-        <tr>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#71717a;font-size:13px;width:110px;">Pemohon</td>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#18181b;font-size:14px;font-weight:600;">{{nama}}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#71717a;font-size:13px;">Instansi</td>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#18181b;font-size:14px;font-weight:600;">{{instansi}}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#71717a;font-size:13px;">Layanan</td>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#18181b;font-size:14px;font-weight:600;">{{layanan}}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#71717a;font-size:13px;">Tanggal</td>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#18181b;font-size:14px;font-weight:600;">{{tanggal}}</td>
-        </tr>
-        <tr>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:#71717a;font-size:13px;">Status</td>
-          <td style="padding:9px 0;border-top:1px solid #F4F4F5;color:{{tintColor}};font-size:14px;font-weight:700;">{{statusLabel}}</td>
-        </tr>
-      </table>
-      {{statusLink}}
-    </div>
-    <div style="background:#FAFAF9;border-top:1px solid #E7E5E4;padding:22px 32px;text-align:center;">
-      <p style="font-size:12.5px;color:#71717a;margin:0 0 10px;line-height:1.55;">Untuk detail dan dokumen lebih lanjut, hubungi admin Diskominfotik Kabupaten Sumbawa.</p>
-      <p style="font-size:13.5px;color:#18181b;margin:0;">Salam,<br/><strong>Diskominfotik Kabupaten Sumbawa</strong></p>
-    </div>
-  </div>
+  `<!--
+  Template Email - Notifikasi Status Permohonan
+  Sistem Reservasi Layanan Diskominfotik Kabupaten Sumbawa
+  Versi 2: layout lebih rapi, terstruktur per section, background anime + overlay
+-->
+<div style="margin:0; padding:0; background-color:#eef0f4; font-family:Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef0f4; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:14px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+
+          <!-- ============ SECTION 1: HERO / HEADER ============ -->
+          <tr>
+            <td style="padding:0;">
+              <div style="
+                background-image:url('https://i.pinimg.com/736x/d7/9a/ea/d79aead0823e257308627ffe99ff68a8.jpg');
+                background-size:cover;
+                background-position:center;
+                background-repeat:no-repeat;
+                -webkit-filter: blur(2px);
+                filter: blur(2px);
+              ">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:36px 32px;">
+                      <div style="background-color:{{tintBg}}; border-radius:12px; padding:28px 24px; -webkit-filter:none; filter:none;">
+                        <p style="margin:0 0 6px 0; font-size:12px; letter-spacing:0.5px; text-transform:uppercase; color:#666;">
+                          Sistem Reservasi Layanan &middot; Diskominfotik Kab. Sumbawa
+                        </p>
+                        <h1 style="margin:0; font-size:24px; line-height:1.3; color:{{tintColor}};">
+                          {{heading}}
+                        </h1>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ============ SECTION 2: STATUS BADGE ============ -->
+          <tr>
+            <td style="padding:24px 32px 0 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:{{tintBg}}; color:{{tintColor}}; font-weight:bold; font-size:13px; letter-spacing:0.5px; padding:8px 18px; border-radius:20px;">
+                    {{statusLabel}}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ============ SECTION 3: SALAM & RINGKASAN ============ -->
+          <tr>
+            <td style="padding:20px 32px 0 32px; color:#222;">
+              <p style="margin:0 0 14px 0; font-size:15px; line-height:1.6;">
+                Yth. <strong>{{nama}}</strong><br>
+                <span style="color:#666; font-size:13px;">{{instansi}}</span>
+              </p>
+              <p style="margin:0; font-size:15px; line-height:1.6;">
+                Permohonan Anda untuk layanan <strong>{{layanan}}</strong> telah
+                <strong>{{kataKerja}}</strong>.
+              </p>
+            </td>
+          </tr>
+
+          <!-- ============ SECTION 4: DETAIL JADWAL (card) ============ -->
+          <tr>
+            <td style="padding:20px 32px 0 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f8fa; border-radius:10px;">
+                <tr>
+                  <td style="padding:18px 20px; font-size:13px; color:#444; line-height:1.8;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#888; width:120px; vertical-align:top;">Jadwal</td>
+                        <td style="font-weight:bold; color:#222;">{{tanggal}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color:#888; vertical-align:top;">Mulai</td>
+                        <td>{{tanggalMulai}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color:#888; vertical-align:top;">Selesai</td>
+                        <td>{{tanggalSelesai}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ============ SECTION 5: ALASAN PENOLAKAN (kosong jika disetujui) ============ -->
+          <tr>
+            <td style="padding:16px 32px 0 32px;">
+              {{rejectReason}}
+            </td>
+          </tr>
+
+          <!-- ============ SECTION 6: CTA BUTTON ============ -->
+          <tr>
+            <td style="padding:24px 32px 8px 32px;" align="center">
+              {{statusLink}}
+            </td>
+          </tr>
+
+          <!-- ============ SECTION 7: FOOTER ============ -->
+          <tr>
+            <td style="padding:24px 32px; background-color:#fafafa; border-top:1px solid #eee; text-align:center;">
+              <p style="margin:0; font-size:12px; color:#999; line-height:1.6;">
+                Email ini dikirim otomatis oleh Sistem Reservasi Layanan<br>
+                Diskominfotik Kabupaten Sumbawa. Mohon tidak membalas email ini.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </div>`
 
 export const DEFAULT_STATUS_SUBJECT = 'Permohonan Layanan {{label}} ({{statusLabel}})'
@@ -131,6 +206,20 @@ export async function saveEmailTemplate(subject: string, content: string): Promi
 }
 
 const LAYOUT_KEY = 'email.status.layout'
+const MODE_KEY = 'email.status.mode'
+
+export async function getEmailMode(): Promise<'layout' | 'html'> {
+  const row = await prisma.setting.findUnique({ where: { key: MODE_KEY } })
+  return row?.value === 'html' ? 'html' : 'layout'
+}
+
+export async function saveEmailMode(mode: 'layout' | 'html'): Promise<void> {
+  await prisma.setting.upsert({
+    where: { key: MODE_KEY },
+    create: { key: MODE_KEY, value: mode },
+    update: { value: mode },
+  })
+}
 
 export async function getEmailLayout(): Promise<EmailBlock[] | null> {
   const row = await prisma.setting.findUnique({ where: { key: LAYOUT_KEY } })
@@ -230,7 +319,18 @@ function renderTemplate(content: string, vars: Record<string, string>): string {
 export async function sendStatusEmail(input: StatusEmailInput) {
   const cfg = await getSmtpConfig()
   if (!cfg.host || !cfg.from || !input.to) return
-  const tanggalkata = input.tanggal.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const fmtTanggal = (d: Date) => d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const jam = (d: Date) => d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const mulaiTxt = `${fmtTanggal(input.tanggal)}, ${jam(input.tanggal)} WITA`
+  let tanggalkata = mulaiTxt
+  let selesaiTxt = ''
+  if (input.tanggalSelesai) {
+    const end = new Date(input.tanggalSelesai)
+    selesaiTxt = `${fmtTanggal(end)}, ${jam(end)} WITA`
+    tanggalkata = input.tanggal.toDateString() === end.toDateString()
+      ? `${fmtTanggal(input.tanggal)}, ${jam(input.tanggal)}\u2013${jam(end)} WITA`
+      : `${mulaiTxt} \u2013 ${selesaiTxt}`
+  }
   const success = input.status === 'APPROVED'
   const statusLabel = success ? 'DISETUJUI' : 'DITOLAK'
   const heading = success ? 'Permohonan Anda Disetujui' : 'Permohonan Anda Ditolak'
@@ -245,6 +345,8 @@ export async function sendStatusEmail(input: StatusEmailInput) {
     instansi: esc(input.instansi),
     layanan: esc(input.layanan),
     tanggal: esc(tanggalkata),
+    tanggalMulai: esc(mulaiTxt),
+    tanggalSelesai: esc(selesaiTxt),
     statusLabel,
     heading,
     kataKerja,
@@ -256,8 +358,7 @@ export async function sendStatusEmail(input: StatusEmailInput) {
     tintColor: success ? '#16a34a' : '#dc2626',
     tintBg: success ? '#f0fdf4' : '#fef2f2',
   }
-  const layout = await getEmailLayout()
-  const { subject, content } = await getEmailTemplate()
+  const { subject } = await getEmailTemplate()
   const textBody =
     `Yth. ${input.nama} (${input.instansi}),\n\n` +
     `Permohonan Anda untuk layanan "${input.layanan}" pada tanggal ${tanggalkata} telah berstatus: ${statusLabel}.\n` +
@@ -269,9 +370,21 @@ export async function sendStatusEmail(input: StatusEmailInput) {
     to: input.to,
     subject: renderTemplate(subject || DEFAULT_STATUS_SUBJECT, { label: success ? 'Disetujui' : 'Ditolak', statusLabel }),
     text: textBody,
-    html: renderStatusHtml(layout, content, vars),
+    html: renderTemplate(DEFAULT_STATUS_TEMPLATE, vars),
   })
   console.log(`[email] ${input.status} notif sent to ${input.to}`)
+}
+
+export async function sendPlainEmail(to: string, subject: string, text: string): Promise<void> {
+  const cfg = await getSmtpConfig()
+  if (!cfg.host || !cfg.from || !to || !subject) return
+  await makeTransport({ host: cfg.host, port: cfg.port, secure: cfg.secure, user: cfg.user, pass: cfg.pass }).sendMail({
+    from: cfg.from,
+    to,
+    subject,
+    text,
+  })
+  console.log(`[email] "${subject}" sent to ${to}`)
 }
 
 export async function sendTestEmail(to: string) {

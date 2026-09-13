@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import formBg from "../assets/form-bg.jpg";
 import { useReveal } from "../hooks/useReveal";
 import { LuCheck as CheckIcon, LuCloudUpload as UploadIcon } from "react-icons/lu";
 
@@ -13,11 +12,15 @@ type FormState = {
   nip: string;
   jabatan: string;
   email: string;
+  noHp: string;
   layanan: string;
-  tanggal: string;
+  tanggalMulai: string;
+  tanggalSelesai: string;
   deskripsi: string;
 };
 type Result = { id: string; statusToken: string };
+
+const PHONE_RE = /^(?:\+62|62|0)8\d{7,12}$/;
 
 const emptyForm: FormState = {
   instansi: "",
@@ -25,8 +28,10 @@ const emptyForm: FormState = {
   nip: "",
   jabatan: "",
   email: "",
+  noHp: "",
   layanan: "",
-  tanggal: "",
+  tanggalMulai: "",
+  tanggalSelesai: "",
   deskripsi: "",
 };
 
@@ -49,6 +54,21 @@ function Spinner() {
       <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75" />
     </svg>
   );
+}
+
+function formatSchedule(mulai: string, selesai: string) {
+  if (!mulai) return "-";
+  const start = new Date(mulai);
+  const date = start.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  const time = (d: Date) =>
+    d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false });
+  if (!selesai) return `${date}, ${time(start)} WITA`;
+  const end = new Date(selesai);
+  const sameDay = start.toDateString() === end.toDateString();
+  const endTxt = sameDay
+    ? time(end)
+    : `${time(end)} (${end.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})`;
+  return `${date}, ${time(start)}\u2013${endTxt} WITA`;
 }
 
 export default function AjukanPage() {
@@ -136,10 +156,22 @@ export default function AjukanPage() {
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
         next.email = "Format email tidak valid";
       }
+      if (!form.noHp.trim()) {
+        next.noHp = "Nomor HP wajib diisi";
+      } else if (!PHONE_RE.test(form.noHp.trim().replace(/[\s-]/g, ""))) {
+        next.noHp = "Format nomor HP tidak valid (contoh: 081234567890)";
+      }
     } else if (step === 1) {
       if (!form.instansi) next.instansi = "Pilih instansi";
       if (!form.layanan) next.layanan = "Pilih jenis layanan";
-      if (!form.tanggal) next.tanggal = "Tanggal kegiatan wajib diisi";
+      if (!form.tanggalMulai) {
+        next.tanggalMulai = "Tanggal & jam mulai wajib diisi";
+      }
+      if (!form.tanggalSelesai) {
+        next.tanggalSelesai = "Tanggal & jam selesai wajib diisi";
+      } else if (form.tanggalMulai && new Date(form.tanggalSelesai) <= new Date(form.tanggalMulai)) {
+        next.tanggalSelesai = "Jam selesai harus setelah jam mulai";
+      }
     }
     setErrors(next);
     if (Object.keys(next).length > 0) {
@@ -176,8 +208,10 @@ export default function AjukanPage() {
       fd.append("nip", form.nip);
       fd.append("jabatan", form.jabatan);
       fd.append("email", form.email.trim());
+      fd.append("noHp", form.noHp.trim());
       fd.append("layanan", form.layanan);
-      fd.append("tanggal", form.tanggal);
+      fd.append("tanggalMulai", form.tanggalMulai);
+      fd.append("tanggalSelesai", form.tanggalSelesai);
       fd.append("deskripsi", form.deskripsi);
       fd.append("pdf", pdfFile);
 
@@ -204,68 +238,51 @@ export default function AjukanPage() {
   const summaryErrors = Object.entries(errors).filter(([k]) => k !== "submit");
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] bg-background text-foreground">
-      {/* Kiri — brand + latar + indikator langkah */}
-      <div className="hidden lg:flex lg:w-[42%] xl:w-1/2 relative items-center justify-center p-12 overflow-hidden" data-reveal>
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${formBg})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-slate-950/75 to-slate-900/70" />
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
+      {/* Dekorasi tipis */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-28 -right-28 size-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-28 size-96 rounded-full bg-primary/5 blur-3xl" />
+      </div>
 
-        <div className="relative z-10 w-full max-w-sm text-white">
-          <ol className="space-y-5">
-            {stepLabels.map((s, i) => {
-              const done = i < step;
-              const active = i === step;
-              return (
-                <li key={s.title} className="flex items-center gap-4">
+      <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-4 py-8 sm:py-12">
+        {/* Header */}
+        <div className="mb-6 text-center" data-reveal>
+          <h1 className="font-display font-light text-2xl sm:text-3xl tracking-tight text-foreground">Ajukan Layanan</h1>
+          <p className="text-sm text-muted-foreground mt-1">Isi formulir untuk mengajukan permohonan layanan.</p>
+        </div>
+
+        {/* Indikator langkah */}
+        <ol className="mb-6 flex items-center gap-2 sm:gap-3" data-reveal aria-label="Tahapan permohonan">
+          {stepLabels.map((s, i) => {
+            const done = i < step;
+            const active = i === step;
+            return (
+              <li key={s.title} className="flex items-center gap-2 sm:gap-3">
+                <span className="flex items-center gap-2">
                   <span
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                      done ? "bg-success text-white" : active ? "bg-white text-slate-900" : "bg-white/15 text-white/70"
+                    className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                      done ? "bg-primary text-primary-foreground" : active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
                     }`}
                     aria-hidden="true"
                   >
-                    {done ? <CheckIcon className="size-4" /> : i + 1}
+                    {done ? <CheckIcon className="size-3.5" /> : i + 1}
                   </span>
-                  <div className="leading-tight">
-                    <p className={`text-sm font-semibold ${active ? "text-white" : done ? "text-white/90" : "text-white/50"}`}>{s.title}</p>
-                    <p className={`text-xs ${active ? "text-white/70" : "text-white/40"}`}>{s.desc}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                  <span className={`hidden sm:block text-xs font-medium ${active ? "text-foreground" : done ? "text-foreground/70" : "text-muted-foreground"}`}>
+                    {s.title}
+                  </span>
+                </span>
+                {i < stepLabels.length - 1 && <span className="h-px w-6 sm:w-10 bg-border" aria-hidden="true" />}
+              </li>
+            );
+          })}
+        </ol>
 
-          <ul className="mt-12 space-y-2.5 text-sm text-white/75">
-            <li className="flex items-center gap-2.5">
-              <CheckIcon className="size-4 text-white shrink-0" />
-              Proses cepat tanpa antre
-            </li>
-            <li className="flex items-center gap-2.5">
-              <CheckIcon className="size-4 text-white shrink-0" />
-              Status bisa dipantau langsung
-            </li>
-            <li className="flex items-center gap-2.5">
-              <CheckIcon className="size-4 text-white shrink-0" />
-              Gratis untuk instansi pemerintah
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Kanan — wizard form */}
-      <div className="w-full lg:w-[58%] xl:w-1/2 flex items-start justify-center p-6 sm:p-8 lg:p-12 overflow-y-auto" data-reveal>
-        <div className="w-full max-w-lg">
-          {/* Header mobile */}
-          <div className="lg:hidden mb-6">
-            <h1 className="font-display font-light text-2xl tracking-tight text-foreground">Ajukan Layanan</h1>
-            <p className="text-sm text-muted-foreground mt-1">Isi formulir untuk mengajukan permohonan.</p>
-          </div>
-
-          {result ? (
-            /* Sukses */
-            <div role="status" className="space-y-5 mt-2">
+        {result ? (
+          /* Sukses */
+          <div role="status" className="w-full rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden" data-reveal>
+            <div className="h-1 bg-primary" />
+            <div className="p-5 sm:p-7 space-y-5">
               <div className="flex items-center gap-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-success/15">
                   <CheckIcon className="size-5 text-success" />
@@ -276,18 +293,18 @@ export default function AjukanPage() {
                 </div>
               </div>
 
-              <div className="rounded border border-border bg-card p-5 space-y-3">
+              <div className="rounded border border-border bg-muted/40 p-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
                   Simpan token di bawah untuk mengecek status permohonan:
                 </p>
-                <div className="flex items-center gap-2 rounded bg-muted px-3 py-2.5">
+                <div className="flex items-center gap-2 rounded bg-card px-3 py-2.5 border border-border">
                   <code className="min-w-0 flex-1 text-sm font-mono font-semibold text-foreground break-all">
                     {result.statusToken}
                   </code>
                   <button
                     type="button"
                     onClick={() => handleCopyToken(result.statusToken)}
-                    className="shrink-0 rounded bg-card border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                    className="shrink-0 rounded bg-muted border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-primary/10 transition-colors"
                   >
                     {copied ? "Tersalin" : "Salin"}
                   </button>
@@ -318,9 +335,12 @@ export default function AjukanPage() {
                 </button>
               </div>
             </div>
-          ) : (
-            /* Form wizard */
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          </div>
+        ) : (
+          /* Form wizard */
+          <div className="w-full rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden" data-reveal>
+            <div className="h-1 bg-primary" />
+            <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-5" noValidate>
               {/* Heading */}
               <div>
                 <h2 className="font-display font-medium text-xl tracking-tight text-foreground">Formulir Permohonan</h2>
@@ -393,19 +413,38 @@ export default function AjukanPage() {
                       {errors.nip && <p className="text-xs text-destructive mt-1">{errors.nip}</p>}
                     </div>
                   </div>
-                  <div>
-                    <label htmlFor="field-jabatan">Jabatan *</label>
-                    <input
-                      id="field-jabatan"
-                      type="text"
-                      value={form.jabatan}
-                      onChange={(e) => patch({ jabatan: e.target.value })}
-                      placeholder="Jabatan di instansi"
-                      className={errors.jabatan ? inputErrorClass : inputClass}
-                      aria-invalid={!!errors.jabatan}
-                      required
-                    />
-                    {errors.jabatan && <p className="text-xs text-destructive mt-1">{errors.jabatan}</p>}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="field-jabatan">Jabatan *</label>
+                      <input
+                        id="field-jabatan"
+                        type="text"
+                        value={form.jabatan}
+                        onChange={(e) => patch({ jabatan: e.target.value })}
+                        placeholder="Jabatan di instansi"
+                        className={errors.jabatan ? inputErrorClass : inputClass}
+                        aria-invalid={!!errors.jabatan}
+                        required
+                      />
+                      {errors.jabatan && <p className="text-xs text-destructive mt-1">{errors.jabatan}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="field-noHp">No. HP / WhatsApp *</label>
+                      <input
+                        id="field-noHp"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        value={form.noHp}
+                        onChange={(e) => patch({ noHp: e.target.value })}
+                        placeholder="08xxxxxxxxxx"
+                        className={errors.noHp ? inputErrorClass : inputClass}
+                        aria-invalid={!!errors.noHp}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1.5">Notifikasi WhatsApp akan dikirim ke nomor ini.</p>
+                      {errors.noHp && <p className="text-xs text-destructive mt-1">{errors.noHp}</p>}
+                    </div>
                   </div>
                   <div>
                     <label htmlFor="field-email">Email *</label>
@@ -469,29 +508,42 @@ export default function AjukanPage() {
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="field-tanggal">Tanggal Kegiatan *</label>
+                      <label htmlFor="field-tanggalMulai">Tanggal & Jam Mulai *</label>
                       <input
-                        id="field-tanggal"
-                        type="date"
-                        value={form.tanggal}
-                        onChange={(e) => patch({ tanggal: e.target.value })}
-                        className={errors.tanggal ? inputErrorClass : inputClass}
-                        aria-invalid={!!errors.tanggal}
+                        id="field-tanggalMulai"
+                        type="datetime-local"
+                        value={form.tanggalMulai}
+                        onChange={(e) => patch({ tanggalMulai: e.target.value })}
+                        className={errors.tanggalMulai ? inputErrorClass : inputClass}
+                        aria-invalid={!!errors.tanggalMulai}
                         required
                       />
-                      {errors.tanggal && <p className="text-xs text-destructive mt-1">{errors.tanggal}</p>}
+                      {errors.tanggalMulai && <p className="text-xs text-destructive mt-1">{errors.tanggalMulai}</p>}
                     </div>
                     <div>
-                      <label htmlFor="field-deskripsi">Deskripsi / Keterangan</label>
-                      <textarea
-                        id="field-deskripsi"
-                        value={form.deskripsi}
-                        onChange={(e) => patch({ deskripsi: e.target.value })}
-                        rows={2}
-                        placeholder="Jelaskan kebutuhan Anda (opsional)"
-                        className={`${inputClass} resize-none`}
+                      <label htmlFor="field-tanggalSelesai">Tanggal & Jam Selesai *</label>
+                      <input
+                        id="field-tanggalSelesai"
+                        type="datetime-local"
+                        value={form.tanggalSelesai}
+                        onChange={(e) => patch({ tanggalSelesai: e.target.value })}
+                        className={errors.tanggalSelesai ? inputErrorClass : inputClass}
+                        aria-invalid={!!errors.tanggalSelesai}
+                        required
                       />
+                      {errors.tanggalSelesai && <p className="text-xs text-destructive mt-1">{errors.tanggalSelesai}</p>}
                     </div>
+                  </div>
+                  <div>
+                    <label htmlFor="field-deskripsi">Deskripsi / Keterangan</label>
+                    <textarea
+                      id="field-deskripsi"
+                      value={form.deskripsi}
+                      onChange={(e) => patch({ deskripsi: e.target.value })}
+                      rows={2}
+                      placeholder="Jelaskan kebutuhan Anda (opsional)"
+                      className={`${inputClass} resize-none`}
+                    />
                   </div>
 
                   {/* Gagal load dropdown */}
@@ -548,7 +600,7 @@ export default function AjukanPage() {
                   </div>
 
                   {/* Ringkasan */}
-                  <div className="rounded border border-border bg-card p-4 space-y-1.5 text-sm">
+                  <div className="rounded border border-border bg-muted/40 p-4 space-y-1.5 text-sm">
                     <p className="font-semibold text-foreground text-xs uppercase tracking-wide text-muted-foreground mb-2">Ringkasan permohonan</p>
                     <div className="flex justify-between gap-4">
                       <span className="text-muted-foreground">Pemohon</span>
@@ -563,8 +615,12 @@ export default function AjukanPage() {
                       <span className="font-medium text-foreground text-right">{form.layanan || "-"}</span>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span className="text-muted-foreground">Tanggal</span>
-                      <span className="font-medium text-foreground text-right">{form.tanggal || "-"}</span>
+                      <span className="text-muted-foreground">No. HP</span>
+                      <span className="font-medium text-foreground text-right">{form.noHp || "-"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Jadwal</span>
+                      <span className="font-medium text-foreground text-right">{formatSchedule(form.tanggalMulai, form.tanggalSelesai)}</span>
                     </div>
                   </div>
                 </div>
@@ -606,8 +662,8 @@ export default function AjukanPage() {
                 )}
               </div>
             </form>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

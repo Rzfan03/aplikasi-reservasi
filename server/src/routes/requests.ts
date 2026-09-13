@@ -1,44 +1,162 @@
 import { randomUUID } from 'node:crypto'
-import { unlink } from 'node:fs/promises'
+import { open, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { Router } from 'express'
 import { prisma } from '../db.js'
 import { uploadPdf, uploadsDir } from '../upload.js'
 import { requireAdmin } from '../middleware/requireAdmin.js'
-import { sendStatusEmail } from '../email.js'
+import { sendStatusEmail, sendPlainEmail } from '../email.js'
+import { sendWhatsApp, buildStatusMessage, getWaSettings } from '../whatsapp.js'
+import { generateSurat } from '../pdf.js'
 import { broadcast } from '../sse.js'
 import { wrap } from '../wrap.js'
 
 export const requestsRouter = Router()
 
+const FMT_DATE = (d: Date) => d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+const FMT_TIME = (d: Date) => d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+function scheduleText(tanggal: Date, tanggalSelesai?: Date | null): string {
+  const mulai = `${FMT_DATE(tanggal)}, ${FMT_TIME(tanggal)} WITA`
+  if (!tanggalSelesai) return mulai
+  const end = new Date(tanggalSelesai)
+  return tanggal.toDateString() === end.toDateString()
+    ? `${FMT_DATE(tanggal)}, ${FMT_TIME(tanggal)}–${FMT_TIME(end)} WITA`
+    : `${mulai} s.d. ${FMT_DATE(end)} ${FMT_TIME(end)} WITA`
+}
+
+async function notifyAdminsNewRequest(r: {
+  nama: string; instansi: string; layanan: string; tanggal: Date; tanggalSelesai?: Date | null
+}): Promise<void> {
+  const admins = await prisma.admin.findMany({ select: { email: true } })
+  const text =
+    `Permohonan baru masuk:\n\n` +
+    `Nama: ${r.nama}\nInstansi: ${r.instansi}\nLayanan: ${r.layanan}\n` +
+    `Jadwal: ${scheduleText(r.tanggal, r.tanggalSelesai)}\n\n` +
+    `Buka dashboard admin untuk memproses permohonan ini.`
+  await Promise.allSettled(admins.map((a) => sendPlainEmail(a.email, `Permohonan Baru — ${r.layanan}`, text)))
+  const wa = await getWaSettings()
+  if (wa.enabled && wa.pairNumber) {
+    await sendWhatsApp(wa.pairNumber, text).catch(() => {})
+  }
+}
+
+// Rate limit publik: maks 5 permohonan/IP/menit (tanpa dependency eksternal).
+// ponytail: limiter in-memory per-IP, reset saat restart server; naikkan ke
+// Redis/DB bila multi-instance atau butuh persisten.
+const RATE_WINDOW_MS = 60_000
+const RATE_MAX = 5
+const hits = new Map<string, number[]>()
+function rateLimitPublic(req: { ip?: string }, res: { status: (c: number) => { json: (b: unknown) => void } }, next: () => void) {
+  const ip = req.ip ?? 'unknown'
+  const now = Date.now()
+  const list = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
+  if (list.length >= RATE_MAX) {
+    res.status(429).json({ error: 'Terlalu banyak permohonan dari alamat ini, coba lagi beberapa saat' })
+    return
+  }
+  list.push(now)
+  if (hits.size > 10_000) hits.clear()
+  hits.set(ip, list)
+  next()
+}
+
 // User submit
-requestsRouter.post('/', uploadPdf.single('pdf'), wrap(async (req, res) => {
+const rejectWithCleanup = async (req: { file?: { path?: string } | undefined }, res: { status: (c: number) => { json: (b: unknown) => void } }, message: string) => {
+  if (req.file?.path) await unlink(req.file.path).catch(() => {})
+  res.status(400).json({ error: message })
+}
+requestsRouter.post('/', rateLimitPublic, uploadPdf.single('pdf'), wrap(async (req, res) => {
     if (!req.file) {
       res.status(400).json({ error: 'PDF file is required' })
       return
     }
-    const { instansi, nama, nip, jabatan, email, layanan, tanggal, deskripsi } = req.body
-    if (!instansi || !nama || !nip || !jabatan || !email || !layanan || !tanggal) {
-      res.status(400).json({ error: 'Missing required fields' })
+    const { instansi, nama, nip, jabatan, email, noHp, layanan, tanggal, tanggalMulai, tanggalSelesai, deskripsi } = req.body
+    if (!instansi || !nama || !nip || !jabatan || !email || !layanan || !(tanggalMulai || tanggal)) {
+      await rejectWithCleanup(req, res, 'Missing required fields')
       return
     }
-    const statusToken = randomUUID()
-    const request = await prisma.request.create({
-      data: {
-        instansi,
-        nama,
-        nip,
-        jabatan,
-        email,
+    const phone = (noHp ?? '').replace(/[\s-]/g, '')
+    if (!/^(?:\+62|62|0)8\d{7,12}$/.test(phone)) {
+      await rejectWithCleanup(req, res, 'Nomor HP tidak valid')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      await rejectWithCleanup(req, res, 'Format email tidak valid')
+      return
+    }
+    // Validasi isi file: PDF asli (4 byte pertama %PDF), bukan sekadar ekstensi/mimetype.
+    let isPdf = false
+    try {
+      const fh = await open(req.file.path, 'r')
+      const head = Buffer.alloc(4)
+      await fh.read(head, 0, 4, 0)
+      await fh.close()
+      isPdf = head.toString('latin1') === '%PDF'
+    } catch {}
+    if (!isPdf) {
+      await rejectWithCleanup(req, res, 'File harus berupa PDF asli')
+      return
+    }
+    const tanggalStart = new Date(tanggalMulai || tanggal)
+    const tanggalEnd = tanggalSelesai ? new Date(tanggalSelesai) : null
+    if (Number.isNaN(tanggalStart.getTime()) || (tanggalEnd && Number.isNaN(tanggalEnd.getTime()))) {
+      await rejectWithCleanup(req, res, 'Tanggal kegiatan tidak valid')
+      return
+    }
+    if (tanggalEnd && tanggalEnd < tanggalStart) {
+      await rejectWithCleanup(req, res, 'Tanggal selesai tidak boleh sebelum tanggal mulai')
+      return
+    }
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    if (tanggalStart < startOfToday) {
+      await rejectWithCleanup(req, res, 'Tanggal kegiatan tidak boleh di masa lampau')
+      return
+    }
+    // Cek konflik jadwal: layanan yang sama tidak boleh dipesan dua kali di rentang yang sama.
+    // ponytail: cek aplikasi ini rawan race saat create paralel; tambahkan unique index
+    // (mis. partisi per hari) bila double-booking tetap jadi masalah.
+    const end = tanggalEnd ?? new Date(tanggalStart.getTime() + 60_000)
+    const clash = await prisma.request.findFirst({
+      where: {
         layanan,
-        tanggal: new Date(tanggal),
-        deskripsi: deskripsi || null,
-        pdfFile: req.file.filename,
-        statusToken,
+        status: { in: ['PENDING', 'APPROVED'] },
+        OR: [
+          { tanggal: { lt: end }, tanggalSelesai: { gt: tanggalStart } },
+          { tanggal: { lt: end }, tanggalSelesai: null },
+        ],
       },
     })
-    broadcast({ type: 'request_created', id: request.id, nama: request.nama, instansi: request.instansi, layanan: request.layanan, createdAt: request.createdAt })
-    res.status(201).json({ id: request.id, statusToken })
+    if (clash) {
+      await rejectWithCleanup(req, res, 'Layanan tersebut sudah dipesan pada jadwal yang sama')
+      return
+    }
+    try {
+    const statusToken = randomUUID()
+      const request = await prisma.request.create({
+        data: {
+          instansi,
+          nama,
+          nip,
+          jabatan,
+          email,
+          noHp: phone,
+          layanan,
+          tanggal: tanggalStart,
+          tanggalSelesai: tanggalEnd,
+          deskripsi: deskripsi || null,
+          pdfFile: req.file.filename,
+          statusToken,
+        },
+      })
+      broadcast({ type: 'request_created', id: request.id, nama: request.nama, instansi: request.instansi, layanan: request.layanan, createdAt: request.createdAt })
+      notifyAdminsNewRequest(request).catch(() => {})
+      res.status(201).json({ id: request.id, statusToken })
+    } catch (err) {
+      if (req.file?.path) await unlink(req.file.path).catch(() => {})
+      throw err
+    }
 }))
 
 // Admin: stats

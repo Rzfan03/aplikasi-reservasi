@@ -32,10 +32,12 @@ model Request {
   nama        String
   nip         String
   jabatan     String
-  email       String?
-  layanan     String
-  tanggal     DateTime
-  deskripsi   String?
+  email         String?
+  noHp          String?
+  layanan       String
+  tanggal       DateTime
+  tanggalSelesai DateTime?
+  deskripsi     String?
   pdfFile     String
   status      Status   @default(PENDING)
   statusToken String   @unique
