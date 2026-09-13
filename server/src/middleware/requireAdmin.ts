@@ -14,9 +14,12 @@ export async function requireAdmin(
   next: NextFunction,
 ) {
   const header = req.headers.authorization
+  // Token via query hanya diizinkan untuk SSE (EventSource tak bisa set header) —
+  // endpoint lain wajib pakai Authorization header.
+  const isEvents = req.path.endsWith('/events')
   const token =
     (header?.startsWith('Bearer ') ? header.slice(7) : undefined) ??
-    (typeof req.query.token === 'string' ? req.query.token : undefined)
+    (isEvents && typeof req.query.token === 'string' ? req.query.token : undefined)
   const user = token ? await verifyToken(token) : null
 
   if (!user) {

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "zapo": {
+      "type": "remote",
+      "url": "https://zapo.to/mcp",
+      "enabled": true
+    }
+  }
+}
