@@ -232,6 +232,78 @@ requestsRouter.get('/admin/:id', requireAdmin, wrap(async (req, res) => {
   res.json(request)
 }))
 
+// Admin: surat hasil (PDF)
+requestsRouter.get('/admin/:id/surat', requireAdmin, wrap(async (req, res) => {
+  const request = await prisma.request.findUnique({ where: { id: req.params.id } })
+  if (!request) { res.status(404).json({ error: 'Not found' }); return }
+  const status = request.status
+  if (status === 'PENDING') { res.status(400).json({ error: 'Permohonan belum diverifikasi' }); return }
+  res.type('application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="surat-${request.statusToken.slice(0, 8)}.pdf"`)
+  res.send(generateSurat({
+    id: request.id,
+    nama: request.nama,
+    nip: request.nip,
+    jabatan: request.jabatan,
+    instansi: request.instansi,
+    layanan: request.layanan,
+    deskripsi: request.deskripsi,
+    mulai: scheduleText(request.tanggal),
+    selesai: request.tanggalSelesai ? scheduleText(request.tanggalSelesai) : null,
+    status: request.status as 'APPROVED' | 'REJECTED',
+    rejectReason: request.rejectReason,
+    adminEmail: request.adminEmail,
+  }))
+}))
+
+// Admin: export rekap CSV
+requestsRouter.get('/export.csv', requireAdmin, wrap(async (req, res) => {
+  const { status, dateFrom, dateTo, search, instansi } = req.query
+  const where: Record<string, unknown> = {}
+  if (status) where.status = status
+  if (instansi) where.instansi = instansi as string
+  if (dateFrom || dateTo) {
+    where.tanggal = {}
+    if (dateFrom) (where.tanggal as Record<string, unknown>).gte = new Date(dateFrom as string)
+    if (dateTo) (where.tanggal as Record<string, unknown>).lte = new Date(dateTo as string)
+  }
+  if (search) {
+    where.OR = [
+      { nama: { contains: search as string, mode: 'insensitive' } },
+      { instansi: { contains: search as string, mode: 'insensitive' } },
+      { nip: { contains: search as string, mode: 'insensitive' } },
+    ]
+  }
+  const rows = await prisma.request.findMany({ where, orderBy: { createdAt: 'desc' } })
+  const header = ['No', 'Instansi', 'Nama', 'NIP', 'Jabatan', 'Email', 'No HP', 'Layanan', 'Tanggal Mulai', 'Tanggal Selesai', 'Status', 'Alasan', 'Diajukan']
+  const cell = (v: unknown) => {
+    const s = v === null || v === undefined ? '' : String(v).replace(/\n/g, ' ')
+    const safe = /^[=+\-@]/.test(s) ? `'${s}` : s
+    return `"${safe.replace(/"/g, '""')}"`
+  }
+  const fmt = (d?: unknown) => (typeof d === 'string' || d instanceof Date ? new Date(d as string).toLocaleString('id-ID') : '')
+  const csv = [header.map(cell).join(';')]
+    .concat(rows.map((r, i) => [
+      i + 1,
+      r.instansi,
+      r.nama,
+      r.nip,
+      r.jabatan,
+      r.email,
+      r.noHp,
+      r.layanan,
+      fmt(r.tanggal),
+      fmt(r.tanggalSelesai),
+      r.status,
+      r.rejectReason,
+      fmt(r.createdAt),
+    ].map(cell).join(';')))
+    .join('\n')
+  res.type('text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', 'attachment; filename="rekap-permohonan.csv"')
+  res.send(`\uFEFF${csv}`)
+}))
+
 // Admin: update status
 requestsRouter.put('/:id/status', requireAdmin, wrap(async (req, res) => {
   const { status, rejectReason } = req.body
@@ -339,7 +411,30 @@ requestsRouter.get('/:statusToken', wrap(async (req, res) => {
   if (!request) { res.status(404).json({ error: 'Not found' }); return }
   res.json({
     id: request.id, instansi: request.instansi, nama: request.nama,
-    layanan: request.layanan, tanggal: request.tanggal, status: request.status,
+    layanan: request.layanan, tanggal: request.tanggal, tanggalSelesai: request.tanggalSelesai, status: request.status,
     rejectReason: request.rejectReason, createdAt: request.createdAt,
   })
+}))
+
+// Public: unduh surat hasil lewat token (APPROVED / REJECTED)
+requestsRouter.get('/:statusToken/surat', wrap(async (req, res) => {
+  const { statusToken } = req.params
+  const request = await prisma.request.findUnique({ where: { statusToken } })
+  if (!request || request.status === 'PENDING') { res.status(404).json({ error: 'Not found' }); return }
+  res.type('application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="surat-${request.id}.pdf"`)
+  res.send(generateSurat({
+    id: request.id,
+    nama: request.nama,
+    nip: request.nip,
+    jabatan: request.jabatan,
+    instansi: request.instansi,
+    layanan: request.layanan,
+    deskripsi: request.deskripsi,
+    mulai: scheduleText(request.tanggal),
+    selesai: request.tanggalSelesai ? scheduleText(request.tanggalSelesai) : null,
+    status: request.status as 'APPROVED' | 'REJECTED',
+    rejectReason: request.rejectReason,
+    adminEmail: request.adminEmail,
+  }))
 }))

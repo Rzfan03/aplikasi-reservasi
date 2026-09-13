@@ -12,6 +12,7 @@ type StatusData = {
   nama: string;
   layanan: string;
   tanggal: string;
+  tanggalSelesai: string | null;
   status: RequestStatus;
   rejectReason: string | null;
   createdAt: string;
@@ -37,6 +38,18 @@ function formatDate(iso: string) {
     day: "numeric",
     month: "long",
     year: "numeric",
+  });
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   });
 }
 
@@ -152,14 +165,26 @@ export default function StatusPage() {
                 <dd className="mt-0.5 font-medium text-foreground">{data.layanan}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Tanggal kegiatan</dt>
-                <dd className="mt-0.5 font-medium text-foreground">{formatDate(data.tanggal)}</dd>
-              </div>
-              <div>
                 <dt className="text-xs uppercase tracking-wide text-muted-foreground">Diajukan pada</dt>
                 <dd className="mt-0.5 font-medium text-foreground">{formatDate(data.createdAt)}</dd>
               </div>
             </dl>
+
+            <div className="rounded border border-border bg-muted/50 p-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Jadwal kegiatan</p>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground shrink-0">Mulai</dt>
+                  <dd className="font-medium text-foreground text-right">{formatDateTime(data.tanggal)} WITA</dd>
+                </div>
+                {data.tanggalSelesai && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground shrink-0">Selesai</dt>
+                    <dd className="font-medium text-foreground text-right">{formatDateTime(data.tanggalSelesai)} WITA</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
 
             {data.status === "REJECTED" && data.rejectReason && (
               <div role="alert" className="rounded border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-foreground">
@@ -173,6 +198,22 @@ export default function StatusPage() {
                 Permohonan disetujui. Koordinasi jadwal dan kelengkapan dokumen akan dihubungi
                 melalui kontak yang Anda berikan kepada admin.
               </p>
+            )}
+
+            {data.status !== "PENDING" && (
+              <div className="pt-1">
+                <a
+                  href={`${API_URL}/api/requests/${encodeURIComponent(token)}/surat`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-200 hover:bg-primary-dim"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" />
+                  </svg>
+                  Unduh Surat ({data.status === "APPROVED" ? "Disetujui" : "Penolakan"})
+                </a>
+              </div>
             )}
           </div>
         )}

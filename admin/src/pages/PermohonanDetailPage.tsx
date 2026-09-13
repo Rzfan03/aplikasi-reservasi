@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import StatusBadge from '@/components/StatusBadge'
-import { fetchRequest, updateStatus, fetchPdf } from '@/lib/api'
+import { fetchRequest, updateStatus, fetchPdf, downloadAuth } from '@/lib/api'
+import { toast } from '@/lib/swal'
 import type { RequestData, Status } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -23,6 +24,10 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
       <span className="min-w-0 flex-1 break-words text-sm text-foreground">{value}</span>
     </div>
   )
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 export default function PermohonanDetailPage() {
@@ -85,6 +90,15 @@ export default function PermohonanDetailPage() {
     }
   }
 
+  async function handleSurat() {
+    if (!item) return
+    try {
+      await downloadAuth(`/api/requests/admin/${item.id}/surat`, `surat-${item.nama.replace(/\s+/g, '-')}.pdf`)
+    } catch (e) {
+      toast.fire({ icon: 'error', title: e instanceof Error ? e.message : 'Gagal mengunduh surat' })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
@@ -132,7 +146,9 @@ export default function PermohonanDetailPage() {
           <DetailRow label="NIP" value={item.nip} />
           <DetailRow label="Jabatan" value={item.jabatan} />
           <DetailRow label="Layanan" value={item.layanan} />
-          <DetailRow label="Tanggal" value={new Date(item.tanggal).toLocaleDateString('id-ID')} />
+          <DetailRow label="No. HP" value={item.noHp || '-'} />
+          <DetailRow label="Mulai" value={formatDateTime(item.tanggal)} />
+          <DetailRow label="Selesai" value={item.tanggalSelesai ? formatDateTime(item.tanggalSelesai) : '-'} />
           <DetailRow label="Deskripsi" value={item.deskripsi || '-'} />
           {item.adminEmail && <DetailRow label="Diperbarui oleh" value={item.adminEmail} />}
           {item.status === 'REJECTED' && item.rejectReason && (
@@ -141,11 +157,17 @@ export default function PermohonanDetailPage() {
               <p className="mt-1 text-sm text-foreground">{item.rejectReason}</p>
             </div>
           )}
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleOpenPdf} disabled={pdfLoading || !!pdfUrl}>
               <FileText className="size-4" />
               {pdfLoading ? 'Memuat…' : 'Lihat lampiran PDF'}
             </Button>
+            {item.status !== 'PENDING' && (
+              <Button variant="outline" size="sm" onClick={handleSurat}>
+                <Printer className="size-4" />
+                Unduh Surat
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -166,14 +188,14 @@ export default function PermohonanDetailPage() {
 
       {pdfUrl && (
         <Dialog open onOpenChange={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null) }}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-[min(96vw,90rem)]">
             <DialogHeader>
               <DialogTitle>Lampiran PDF</DialogTitle>
             </DialogHeader>
             <iframe
               src={pdfUrl}
               title="Lampiran PDF"
-              className="h-[70vh] w-full rounded-md border border-border bg-muted"
+              className="h-[85vh] w-full rounded-md border border-border bg-muted"
             />
           </DialogContent>
         </Dialog>
